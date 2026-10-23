@@ -1,0 +1,1628 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<title>Code Warrior</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: sticky command bar, rail nav on the left (bottom tabs on phones), content column of sharp clipped-corner panels on a deep indigo field */
+:root{
+  --ink:#100E26;      /* page */
+  --panel:#1B1840;    /* cards */
+  --panel-2:#272259;  /* raised / hover */
+  --well:#0A0920;     /* code + console */
+  --line:#3A3478;
+  --text:#F4F1FF;
+  --muted:#ABA4DA;
+  --dim:#7770B0;
+  --coral:#FF4F79;    /* primary action, brand */
+  --sun:#FFC53D;      /* XP, streak, hints */
+  --cyan:#2FE3CF;     /* run, success */
+  --violet:#9B7BFF;   /* secondary data */
+  --danger:#FF7262;
+  --on-coral:#FFFFFF;
+  --on-sun:#2B1D00;
+  --on-cyan:#03231F;
+  --t-kw:#FF7FA2; --t-str:#FFD36B; --t-num:#7CF3E4; --t-fn:#BFA8FF; --t-com:#6F69AA; --t-const:#2FE3CF;
+  --f-display:"Chakra Petch","Segoe UI",system-ui,sans-serif;
+  --f-body:"Figtree","Segoe UI",system-ui,sans-serif;
+  --f-code:"JetBrains Mono",ui-monospace,Consolas,"Courier New",monospace;
+  --cut:14px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--ink)}
+body{
+  background:
+    radial-gradient(900px 500px at 90% -10%, rgba(255,79,121,.16), transparent 60%),
+    radial-gradient(700px 500px at -10% 110%, rgba(47,227,207,.10), transparent 60%),
+    var(--ink);
+  background-attachment:fixed;
+  color:var(--text);font-family:var(--f-body);font-size:15px;line-height:1.55;min-height:100%;
+}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:40;background:var(--ink)}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.cut{clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut))}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(28px,4vw,40px);letter-spacing:.01em}
+h2{font-size:20px;letter-spacing:.02em}
+p{margin:0}
+code{font-family:var(--f-code);font-size:.92em;background:var(--panel-2);padding:1px 6px;color:var(--t-str)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
+.eyebrow,.label{font-family:var(--f-display);font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.lede{color:var(--muted);font-size:17px;max-width:62ch}
+.dim{color:var(--dim)}
+svg.i{width:18px;height:18px;flex:none}
+
+/* top bar */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:rgba(16,14,38,.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.topbar-in{display:flex;align-items:center;gap:12px;height:62px;max-width:1240px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:700;font-size:19px;letter-spacing:.08em;text-transform:uppercase;background:none;border:0;cursor:pointer;padding:0}
+.brand b{color:var(--coral);font-weight:700}
+.mark{width:32px;height:32px;display:grid;place-items:center;background:var(--coral);color:var(--on-coral);font:700 14px var(--f-code);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+.chips{margin-left:auto;display:flex;gap:8px}
+.chip{display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--panel);border:1px solid var(--line);font:700 15px var(--f-display);font-variant-numeric:tabular-nums;white-space:nowrap}
+.chip .cl{font-weight:500;color:var(--muted);font-size:13px}
+.chip.st svg{color:var(--sun)} .chip.xp svg{color:var(--cyan)}
+.chip.lv{background:var(--coral);border-color:var(--coral);color:var(--on-coral)}
+
+/* layout */
+.layout{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:196px minmax(0,1fr);gap:32px;padding-block:28px 64px}
+.rail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 90px);align-self:start;display:flex;flex-direction:column;gap:4px}
+.navbtn{display:flex;align-items:center;gap:12px;padding:12px 14px;background:transparent;border:0;color:var(--muted);font:600 15px var(--f-body);cursor:pointer;text-align:left;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.navbtn:hover{color:var(--text);background:var(--panel)}
+.navbtn[aria-current="page"]{background:var(--panel-2);color:var(--text)}
+.navbtn[aria-current="page"] svg{color:var(--coral)}
+.sync{margin-top:18px;padding:12px 14px;font-size:12.5px;color:var(--dim);border-top:1px solid var(--line);line-height:1.45}
+main{min-width:0;outline:none}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px;font:700 14px var(--f-display);letter-spacing:.08em;text-transform:uppercase;border:0;cursor:pointer;clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px);transition:transform .12s ease,filter .12s ease}
+.btn:hover{filter:brightness(1.1)} .btn:active{transform:translateY(1px)}
+.btn:focus-visible{outline:none;box-shadow:inset 0 0 0 3px var(--text)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn-primary{background:var(--coral);color:var(--on-coral)}
+.btn-run{background:var(--cyan);color:var(--on-cyan)}
+.btn-stuck{background:var(--sun);color:var(--on-sun)}
+.btn-ghost{background:var(--panel-2);color:var(--text)}
+.btn.sm{padding:8px 12px;font-size:12px}
+.link{background:none;border:0;padding:0;color:var(--muted);cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.link:hover{color:var(--text)}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;font:700 11px var(--f-display);letter-spacing:.1em;text-transform:uppercase;background:var(--panel-2);color:var(--muted)}
+.pill.ok{background:rgba(47,227,207,.14);color:var(--cyan)}
+.pill.next{background:rgba(255,197,61,.14);color:var(--sun)}
+.pill.d-Easy{background:rgba(47,227,207,.14);color:var(--cyan)}
+.pill.d-Medium{background:rgba(255,197,61,.14);color:var(--sun)}
+.pill.d-Hard{background:rgba(255,79,121,.16);color:var(--coral)}
+
+/* cards */
+.card{background:var(--panel);border:1px solid var(--line);padding:22px;min-width:0;display:flex;flex-direction:column;gap:16px}
+.card-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+
+/* dashboard */
+.dash{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:18px}
+.s12{grid-column:span 12}.s7{grid-column:span 7}.s5{grid-column:span 5}
+.hero{grid-column:span 12;display:flex;gap:28px;align-items:center;padding:30px;background:linear-gradient(120deg,var(--panel-2),var(--panel) 70%);border:1px solid var(--line);position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-60px;top:-60px;width:260px;height:260px;background:repeating-linear-gradient(135deg,rgba(255,79,121,.14) 0 2px,transparent 2px 14px);pointer-events:none}
+.hero-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:12px;position:relative;z-index:1}
+.xpbar{height:16px;background:var(--well);border:1px solid var(--line);position:relative;overflow:hidden;margin-top:8px}
+.xpbar span{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--coral),var(--sun));transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.xpbar::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 calc(10% - 2px),var(--well) calc(10% - 2px) 10%)}
+.xpmeta{display:flex;justify-content:space-between;gap:12px;font:600 13px var(--f-display);letter-spacing:.06em;color:var(--muted);font-variant-numeric:tabular-nums;flex-wrap:wrap}
+.xpmeta b{color:var(--sun)}
+.emblem{display:flex;flex-direction:column;align-items:center;gap:10px;position:relative;z-index:1;flex:none}
+.emblem-shape{width:118px;height:118px;display:grid;place-items:center;background:linear-gradient(160deg,var(--coral),#B8245A);clip-path:polygon(50% 0,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%)}
+.emblem-lv{font:700 46px var(--f-display);color:var(--on-coral);line-height:1}
+.emblem-lv small{display:block;font-size:11px;letter-spacing:.2em;text-align:center;opacity:.85}
+.emblem-rank{font:700 15px var(--f-display);letter-spacing:.18em;text-transform:uppercase;color:var(--sun)}
+
+.streak-big{display:flex;align-items:center;gap:12px}
+.streak-big svg{width:46px;height:46px;color:var(--sun);filter:drop-shadow(0 0 14px rgba(255,197,61,.45))}
+.streak-big .n{font:700 56px/1 var(--f-display);color:var(--text);font-variant-numeric:tabular-nums}
+.streak-big .u{color:var(--muted);font-weight:600;max-width:9ch;line-height:1.25}
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.day{display:flex;flex-direction:column;align-items:center;gap:6px}
+.day .dl{font:600 11px var(--f-display);letter-spacing:.1em;color:var(--dim)}
+.day .dot{width:100%;max-width:44px;aspect-ratio:1;display:grid;place-items:center;background:var(--well);border:1px solid var(--line);clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}
+.day.on .dot{background:var(--sun);border-color:var(--sun);color:var(--on-sun)}
+.day.on .dot svg{width:55%;height:55%}
+.day.today .dl{color:var(--text)}
+.day.today:not(.on) .dot{border-color:var(--sun);border-style:dashed}
+.mbar{height:8px;background:var(--well);border:1px solid var(--line);position:relative;overflow:hidden}
+.mbar span{position:absolute;inset:0 auto 0 0;background:var(--sun)}
+.milestone p{margin-top:8px;font-size:13.5px;color:var(--muted)}
+
+.prog-wrap{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+.ring{position:relative;width:132px;height:132px;flex:none}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .rv{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.ring .rv b{font:700 30px/1 var(--f-display)}
+.ring .rv span{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-family:var(--f-display)}
+.prows{flex:1;min-width:200px;display:flex;flex-direction:column;gap:14px}
+.prow-top{display:flex;justify-content:space-between;font-weight:600;font-size:14px;margin-bottom:6px}
+.prow-top span:last-child{font-variant-numeric:tabular-nums;color:var(--muted)}
+.pbar{height:8px;background:var(--well);position:relative;overflow:hidden}
+.pbar span{position:absolute;inset:0 auto 0 0;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+
+.next-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.tile{display:flex;flex-direction:column;gap:8px;text-align:left;padding:18px;background:var(--panel-2);border:0;cursor:pointer;min-width:0;transition:transform .15s ease}
+.tile:hover{transform:translateY(-2px)}
+.tile .tt{font:700 18px var(--f-display)}
+.tile .ts{color:var(--muted);font-size:14px}
+.tile .go{margin-top:auto;display:flex;align-items:center;gap:6px;font:700 13px var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--coral)}
+
+.acts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.acts li{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.acts li:last-child{border-bottom:0}
+.acts .ai{width:28px;height:28px;display:grid;place-items:center;flex:none;background:var(--panel-2)}
+.acts .ai svg{width:15px;height:15px}
+.acts .at{color:var(--dim);font-size:12.5px;display:block}
+.k-lesson .ai{color:var(--coral)} .k-challenge .ai{color:var(--cyan)} .k-streak .ai{color:var(--sun)} .k-level .ai{color:var(--violet)}
+
+.badges{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:12px}
+.badge{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.badge .bs{width:64px;height:72px;display:grid;place-items:center;clip-path:polygon(50% 0,100% 22%,100% 70%,50% 100%,0 70%,0 22%);background:var(--well);color:var(--dim)}
+.badge .bs svg{width:28px;height:28px}
+.badge.got .bs{background:linear-gradient(160deg,var(--sun),#F08A1C);color:var(--on-sun)}
+.badge .bn{font:700 13px var(--f-display);letter-spacing:.04em}
+.badge .bd{font-size:12px;color:var(--dim);line-height:1.35}
+.badge:not(.got) .bn{color:var(--muted)}
+
+/* list pages */
+.page-head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-bottom:26px;flex-wrap:wrap}
+.page-head > div:first-child{display:flex;flex-direction:column;gap:10px;min-width:0}
+.head-stat{display:flex;flex-direction:column;align-items:flex-end}
+.head-stat .n{font:700 38px/1 var(--f-display);color:var(--sun);font-variant-numeric:tabular-nums}
+.head-stat span:last-child{font-size:13px;color:var(--muted)}
+.lesson-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.lesson-card{display:flex;gap:18px;align-items:flex-start;text-align:left;padding:20px;background:var(--panel);border:0;cursor:pointer;min-width:0;transition:background .15s ease,transform .15s ease}
+.lesson-card:hover{background:var(--panel-2);transform:translateY(-2px)}
+.lnum{font:700 40px/1 var(--f-display);color:var(--line);font-variant-numeric:tabular-nums;flex:none;min-width:2ch}
+.lesson-card.done .lnum{color:var(--cyan)}
+.lesson-card.upnext .lnum{color:var(--coral)}
+.lbody{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ltitle{font:700 18px var(--f-display)}
+.lsum{color:var(--muted);font-size:14px}
+.lmeta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:4px}
+
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.fbtn{padding:8px 14px;background:var(--panel);border:1px solid var(--line);color:var(--muted);font:600 13px var(--f-display);letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.fbtn[aria-pressed="true"]{background:var(--text);color:var(--ink);border-color:var(--text)}
+.ch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.ch-card{display:flex;flex-direction:column;gap:10px;text-align:left;padding:20px;background:var(--panel);border:0;cursor:pointer;min-width:0;position:relative;transition:background .15s ease,transform .15s ease}
+.ch-card:hover{background:var(--panel-2);transform:translateY(-2px)}
+.ch-card .ct{font:700 19px var(--f-display)}
+.ch-card .cb{color:var(--muted);font-size:14px}
+.ch-card .cf{margin-top:auto;display:flex;justify-content:space-between;align-items:center;gap:8px;padding-top:8px}
+.ch-card .xpv{font:700 14px var(--f-display);color:var(--sun);display:flex;align-items:center;gap:4px}
+.ch-card.solved{background:linear-gradient(160deg,rgba(47,227,207,.10),var(--panel) 55%)}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font:500 12px var(--f-code);color:var(--dim)}
+
+/* lesson + challenge pages */
+.crumbs{margin-bottom:18px}
+.lesson-head{display:flex;flex-direction:column;gap:12px;margin-bottom:28px}
+.lesson-sec{display:flex;flex-direction:column;gap:12px;padding-block:22px;border-top:1px solid var(--line)}
+.prose{display:flex;flex-direction:column;gap:12px;max-width:68ch;color:var(--text)}
+.prose ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.prose strong{color:var(--text)}
+.target{font:600 16px var(--f-code);color:var(--sun);background:var(--well);padding:10px 14px;border-left:3px solid var(--sun);overflow-x:auto;white-space:pre}
+.tbl{overflow-x:auto}
+.ops{border-collapse:collapse;font-size:14px}
+.ops td{padding:7px 14px 7px 0;border-bottom:1px solid var(--line)}
+.ops td:nth-child(odd){padding-right:8px}
+.example{display:flex;flex-direction:column;gap:10px;max-width:760px}
+.hint-text{color:var(--dim);font-size:13px}
+.exercise{background:var(--panel);border:1px solid var(--line);padding:24px;display:flex;flex-direction:column;gap:14px;margin-top:8px}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:28px;flex-wrap:wrap}
+
+.ch-layout{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:26px;align-items:start}
+.ch-brief{display:flex;flex-direction:column;gap:16px;min-width:0}
+.ch-work{display:flex;flex-direction:column;gap:12px;min-width:0}
+.term{display:flex;flex-direction:column}
+.term .console{border-top:1px dashed var(--line)}
+.term .editor + .console{margin-top:-1px}
+.work-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sample{margin:0;font:13.5px/1.6 var(--f-code);background:var(--well);border:1px solid var(--line);padding:12px 14px;overflow-x:auto;color:var(--text)}
+.reward{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--well);border:1px solid var(--line)}
+.reward svg{color:var(--sun);width:26px;height:26px}
+.reward strong{font:700 22px var(--f-display);color:var(--sun);font-variant-numeric:tabular-nums}
+.reward small{display:block;color:var(--dim);font-size:12.5px;line-height:1.4}
+
+/* editor */
+.editor{display:grid;grid-template-columns:auto minmax(0,1fr);background:var(--well);border:1px solid var(--line);font:14px/1.6 var(--f-code);transition:border-color .15s ease}
+.editor:focus-within{border-color:var(--violet)}
+.gutter{padding:12px 10px 12px 14px;color:var(--t-com);text-align:right;user-select:none;-webkit-user-select:none;white-space:pre;border-right:1px solid var(--line);font-variant-numeric:tabular-nums}
+.code-wrap{position:relative;min-width:0}
+.code-wrap pre,.code-wrap textarea{margin:0;padding:12px 14px;font:inherit;line-height:inherit;white-space:pre;tab-size:4;letter-spacing:0;word-spacing:0;border:0}
+.code-wrap pre{position:absolute;inset:0;overflow:hidden;pointer-events:none;color:var(--text)}
+.code-wrap textarea{display:block;width:100%;resize:none;background:transparent;color:transparent;caret-color:var(--sun);outline:none;overflow-x:auto;overflow-y:hidden;-webkit-text-fill-color:transparent}
+.code-wrap textarea::selection{background:rgba(155,123,255,.4)}
+.t-kw{color:var(--t-kw)}.t-str{color:var(--t-str)}.t-num{color:var(--t-num)}.t-fn{color:var(--t-fn)}.t-com{color:var(--t-com);font-style:italic}.t-const{color:var(--t-const)}
+.code-static{margin:0;font:13.5px/1.6 var(--f-code);background:var(--well);padding:12px 14px;overflow-x:auto;color:var(--text);white-space:pre}
+.console{margin:0;background:var(--well);border:1px solid var(--line);font:13.5px/1.6 var(--f-code);padding:12px 14px;min-height:64px;max-height:300px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--text)}
+.console .err{color:var(--danger);font-weight:600}
+.console .tip{display:block;margin-top:10px;padding:10px 12px;background:var(--panel);color:var(--muted);font-family:var(--f-body);font-size:14px;white-space:normal}
+.console .tip b{color:var(--sun)}
+
+/* results + hints */
+.result{display:flex;gap:14px;align-items:flex-start;padding:16px 18px;border:1px solid var(--line);background:var(--panel)}
+.result .ri{width:36px;height:36px;display:grid;place-items:center;flex:none}
+.result.win{border-color:var(--cyan);background:linear-gradient(120deg,rgba(47,227,207,.16),var(--panel) 70%)}
+.result.win .ri{background:var(--cyan);color:var(--on-cyan)}
+.result.miss{border-color:var(--danger)}
+.result.miss .ri{background:var(--danger);color:var(--ink)}
+.result .rb{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1}
+.result strong{font:700 18px var(--f-display)}
+.result .xpg{color:var(--sun);font:700 15px var(--f-display)}
+.diff{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:6px}
+.diff pre{margin:4px 0 0;font:13px/1.55 var(--f-code);background:var(--well);padding:10px 12px;overflow-x:auto;white-space:pre}
+.stuck-area{display:flex;flex-direction:column;gap:10px}
+.hint{position:relative;display:flex;flex-direction:column;gap:6px;padding:14px 48px 14px 16px;background:rgba(255,197,61,.08);border:1px solid rgba(255,197,61,.35);animation:pop .35s ease}
+.hint-x{position:absolute;top:8px;right:8px;width:32px;height:32px;display:grid;place-items:center;background:transparent;border:0;color:var(--muted);cursor:pointer}
+.hint-x:hover{color:var(--text);background:var(--panel-2)}
+.hint-n{font:700 11px var(--f-display);letter-spacing:.16em;text-transform:uppercase;color:var(--sun);display:flex;align-items:center;gap:6px}
+.hint.sol{background:rgba(155,123,255,.08);border-color:rgba(155,123,255,.4)}
+.hint.sol .hint-n{color:var(--violet)}
+.hint.coach{background:rgba(47,227,207,.07);border-color:rgba(47,227,207,.35)}
+.hint.coach .hint-n{color:var(--cyan)}
+@keyframes pop{from{transform:translateY(-4px);opacity:.3}to{transform:none;opacity:1}}
+
+/* toast + confetti */
+.toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);opacity:0;z-index:60;display:flex;align-items:center;gap:10px;padding:12px 18px;background:var(--text);color:var(--ink);font:700 15px var(--f-display);letter-spacing:.04em;pointer-events:none;transition:opacity .25s ease,transform .25s ease;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast svg{color:var(--coral)}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:55;width:100%;height:100%}
+
+@media (max-width:1020px){
+  .s7,.s5{grid-column:span 12}
+  .badges{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .ch-layout{grid-template-columns:minmax(0,1fr)}
+  .ch-work{position:static}
+}
+@media (max-width:760px){
+  .layout{grid-template-columns:minmax(0,1fr);padding-block:20px calc(96px + env(safe-area-inset-bottom,0px))}
+  .rail{position:fixed;inset:auto 0 0 0;top:auto;z-index:30;flex-direction:row;justify-content:space-around;gap:0;background:var(--panel);border-top:1px solid var(--line);padding-top:6px;padding-bottom:calc(6px + env(safe-area-inset-bottom,0px));padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
+  .navbtn{flex-direction:column;gap:4px;font-size:12px;padding:8px 10px;flex:1;align-items:center;clip-path:none}
+  .navbtn[aria-current="page"]{background:transparent;color:var(--coral)}
+  .sync{display:none}
+  .chip .cl{display:none}
+  .brand span.word{display:none}
+  .hero{flex-direction:column-reverse;align-items:stretch;padding:22px}
+  .emblem{flex-direction:row;gap:14px}
+  .emblem-shape{width:72px;height:72px}
+  .emblem-lv{font-size:28px}
+  .next-grid,.diff{grid-template-columns:minmax(0,1fr)}
+  .toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+}
+@media (max-width:420px){
+  .badges{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .chip{padding:6px 9px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+
+<header class="topbar">
+  <div class="topbar-in gut">
+    <button class="brand" data-go="home" aria-label="Code Warrior home">
+      <span class="mark" aria-hidden="true">&gt;_</span>
+      <span class="word">Code<b>Warrior</b></span>
+    </button>
+    <div class="chips">
+      <div class="chip st" title="Daily streak"><span id="chip-st-i"></span><span id="chip-st">0</span><span class="cl">day streak</span></div>
+      <div class="chip xp" title="Total XP"><span id="chip-xp-i"></span><span id="chip-xp">0</span><span class="cl">XP</span></div>
+      <div class="chip lv" id="chip-lv" title="Level">Lv 1</div>
+    </div>
+  </div>
+</header>
+
+<div class="layout gut">
+  <nav class="rail" aria-label="Main">
+    <button class="navbtn" data-go="home" data-nav="home"><span data-icon="home"></span>Base Camp</button>
+    <button class="navbtn" data-go="lessons" data-nav="lessons"><span data-icon="book"></span>Lessons</button>
+    <button class="navbtn" data-go="challenges" data-nav="challenges"><span data-icon="sword"></span>Challenges</button>
+    <p class="sync" id="sync">Progress is saved in this browser.</p>
+  </nav>
+  <main id="view" tabindex="-1"></main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<canvas id="fx" aria-hidden="true"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt-stdlib.js"></script>
+<script>
+/* ---------- content ---------- */
+const LESSONS = [
+{ id:'hello', title:'Hello, Python', topic:'print()', summary:'Write your first line of code and make the computer talk back.',
+  sections:[
+    { h:'Your first instruction', p:`<p>A program is a list of instructions that the computer follows from top to bottom. The simplest instruction in Python is <code>print()</code>. Whatever you put between the parentheses shows up on the screen.</p>`,
+      code:`print("Hello, warrior!")` },
+    { h:'Text goes in quotes', p:`<p>Text in Python is called a <strong>string</strong>. Wrap it in double quotes <code>"like this"</code> or single quotes <code>'like this'</code>. Numbers don't need quotes, and Python can do math right inside <code>print()</code>.</p>`,
+      code:`print("I am learning Python")
+print(42)
+print(7 + 3)` },
+    { h:'Notes for humans', p:`<p>Any line that starts with <code>#</code> is a <strong>comment</strong>. Python skips it. Use comments to leave notes for yourself and for anyone who reads your code.</p>`,
+      code:`# This line is a note. Python ignores it.
+print("This line runs")` }
+  ],
+  ex:{ title:'Report for duty', prompt:`<p>Print exactly this message, including the comma and the exclamation mark:</p><p class="target">Code Warrior, reporting for duty!</p>`,
+    starter:`# Write your print() below
+`, check:{type:'output', expect:'Code Warrior, reporting for duty!'},
+    hints:[`Start with <code>print(</code>, put your message inside quotes, then close with <code>)</code>.`,
+           `Capital letters and punctuation must match exactly, including the comma after <code>Warrior</code>.`],
+    solution:`print("Code Warrior, reporting for duty!")` } },
+
+{ id:'variables', title:'Variables', topic:'name = value', summary:'Store information in labeled boxes so you can use it later.',
+  sections:[
+    { h:'Labeled boxes', p:`<p>A <strong>variable</strong> is a name that holds a value. You create one with an equals sign: the name goes on the left, the value on the right. After that, you can use the name anywhere you would use the value.</p>`,
+      code:`hero = "Ada"
+level = 3
+print(hero)
+print(level)` },
+    { h:'Changing a value', p:`<p>Variables can change. Python works out the right side first, then stores the result in the name on the left. So <code>gold = gold + 5</code> means "take the current gold, add 5, and save it back."</p>`,
+      code:`gold = 10
+print(gold)
+gold = gold + 5
+print(gold)` },
+    { h:'Types of values', p:`<p>Every value has a <strong>type</strong>. Whole numbers are <code>int</code>, numbers with a decimal point are <code>float</code>, and text is <code>str</code>. Notice that <code>"3"</code> in quotes is text, not a number.</p>`,
+      code:`print(type(3))
+print(type(3.5))
+print(type("3"))` },
+    { h:'Naming rules', p:`<p>Names can use letters, numbers and underscores, but they can't start with a number or contain spaces. Python programmers write names in lowercase with underscores, like <code>max_health</code>. Names are case-sensitive, so <code>Gold</code> and <code>gold</code> are two different variables.</p>` }
+  ],
+  ex:{ title:'Arm yourself', prompt:`<p>Create a variable called <code>weapon</code> that holds the text <code>"sword"</code>, then print it.</p>`,
+    starter:`# Create weapon here
+`, check:{type:'test', code:`assert weapon == "sword", 'weapon should hold the text "sword"'`},
+    hints:[`Variables are created with <code>=</code>: the name on the left, the value on the right.`,
+           `Text needs quotes: <code>weapon = "sword"</code>. Then print the variable name <em>without</em> quotes so Python prints its value.`],
+    solution:`weapon = "sword"
+print(weapon)` } },
+
+{ id:'math', title:'Math & Operators', topic:'+ - * / // %', summary:'Turn Python into a calculator for damage, gold and scores.',
+  sections:[
+    { h:'The operators', p:`<p>Python knows all the usual math, plus a few extras that come up all the time in games and puzzles.</p>
+<div class="tbl"><table class="ops"><tr><td><code>+</code></td><td>add</td><td><code>//</code></td><td>divide and drop the remainder</td></tr><tr><td><code>-</code></td><td>subtract</td><td><code>%</code></td><td>the remainder after dividing</td></tr><tr><td><code>*</code></td><td>multiply</td><td><code>**</code></td><td>power</td></tr><tr><td><code>/</code></td><td>divide</td><td></td><td></td></tr></table></div>`,
+      code:`print(7 + 2)
+print(7 - 2)
+print(7 * 2)
+print(7 / 2)
+print(7 // 2)
+print(7 % 2)
+print(2 ** 3)` },
+    { h:'Order of operations', p:`<p>Multiplication and division happen before addition and subtraction, just like in math class. Use parentheses to choose the order yourself.</p>`,
+      code:`print(2 + 3 * 4)
+print((2 + 3) * 4)` },
+    { h:'Math with variables', p:`<p>Variables and math work together. This is how games keep track of health, scores and money.</p>`,
+      code:`hp = 100
+damage = 35
+hp = hp - damage
+print(hp)` }
+  ],
+  ex:{ title:'Slay the dragon', prompt:`<p>A dragon has <code>120</code> HP and each sword hit does <code>15</code> damage. Store the number of hits needed in a variable called <code>hits</code>, working it out with math from the two variables. Then print it.</p>`,
+    starter:`dragon_hp = 120
+sword_damage = 15
+
+# Calculate hits here
+`, check:{type:'test', code:`assert hits == 8, "hits should be 8"`},
+    hints:[`How many times does 15 fit into 120? That's a division.`,
+           `<code>//</code> divides and gives back a whole number. Divide <code>dragon_hp</code> by <code>sword_damage</code> and store it in <code>hits</code>.`],
+    solution:`dragon_hp = 120
+sword_damage = 15
+
+hits = dragon_hp // sword_damage
+print(hits)` } },
+
+{ id:'strings', title:'Working with Text', topic:'f-strings', summary:'Join, measure and reshape strings, and drop variables into text.',
+  sections:[
+    { h:'Joining strings', p:`<p>You can glue strings together with <code>+</code>. Add a space yourself if you want one. You can only join text to text, so turn numbers into text first with <code>str()</code>.</p>`,
+      code:`first = "Ada"
+last = "Lovelace"
+print(first + " " + last)
+print("Level " + str(5))` },
+    { h:'f-strings', p:`<p>An <strong>f-string</strong> is the easiest way to mix variables into text. Put an <code>f</code> right before the opening quote, then write variable names inside curly braces <code>{ }</code>.</p>`,
+      code:`name = "Ada"
+gold = 42
+print(f"{name} has {gold} gold")` },
+    { h:'Useful string tools', p:`<p><code>len()</code> counts characters. <code>.upper()</code> and <code>.lower()</code> change the case. Square brackets grab one character by its position, and positions start at <strong>0</strong>. <code>[-1]</code> means the last character.</p>`,
+      code:`word = "python"
+print(len(word))
+print(word.upper())
+print(word[0])
+print(word[-1])` }
+  ],
+  ex:{ title:'Hero name tag', prompt:`<p>Use an f-string and the two variables to print exactly:</p><p class="target">Ada is level 5</p>`,
+    starter:`name = "Ada"
+level = 5
+
+`, check:{type:'output', expect:'Ada is level 5'},
+    hints:[`Start with <code>print(f"...")</code>. The <code>f</code> goes right before the opening quote.`,
+           `Inside the quotes, put each variable in curly braces: <code>{name}</code> and <code>{level}</code>, with the words " is level " between them.`],
+    solution:`name = "Ada"
+level = 5
+
+print(f"{name} is level {level}")` } },
+
+{ id:'conditions', title:'Making Decisions', topic:'if / elif / else', summary:'Let your program choose what to do based on what is true.',
+  sections:[
+    { h:'Comparisons', p:`<p>A comparison asks a yes-or-no question and gives back <code>True</code> or <code>False</code>. Watch the double equals: <code>=</code> stores a value, while <code>==</code> compares two values.</p>
+<div class="tbl"><table class="ops"><tr><td><code>==</code></td><td>equal to</td><td><code>!=</code></td><td>not equal to</td></tr><tr><td><code>&gt;</code></td><td>greater than</td><td><code>&lt;</code></td><td>less than</td></tr><tr><td><code>&gt;=</code></td><td>greater than or equal</td><td><code>&lt;=</code></td><td>less than or equal</td></tr></table></div>`,
+      code:`hp = 40
+print(hp > 50)
+print(hp == 40)
+print(hp != 40)` },
+    { h:'if and else', p:`<p>An <code>if</code> statement runs a block of code only when its condition is true. The line ends with a colon <code>:</code>, and the code inside is <strong>indented by 4 spaces</strong>. An <code>else</code> block runs when the condition is false.</p>`,
+      code:`hp = 40
+if hp > 50:
+    print("Feeling strong")
+else:
+    print("Drink a potion")` },
+    { h:'More choices with elif', p:`<p><code>elif</code> means "else if." Python checks each condition from top to bottom, runs the first one that is true, and skips the rest.</p>`,
+      code:`score = 82
+if score >= 90:
+    print("Gold medal")
+elif score >= 75:
+    print("Silver medal")
+else:
+    print("Keep training")` }
+  ],
+  ex:{ title:'Fight or flight', prompt:`<p>If <code>hp</code> is below <code>30</code>, print <code>Retreat!</code>. Otherwise print <code>Attack!</code>. With <code>hp</code> set to 25, your program should print <code>Retreat!</code>.</p>`,
+    starter:`hp = 25
+
+`, check:{type:'output', expect:'Retreat!'},
+    hints:[`Start with <code>if hp &lt; 30:</code> and indent the next line by 4 spaces.`,
+           `Add <code>else:</code> on its own line with no indent, then an indented <code>print("Attack!")</code> below it.`],
+    solution:`hp = 25
+
+if hp < 30:
+    print("Retreat!")
+else:
+    print("Attack!")` } },
+
+{ id:'loops', title:'Loops', topic:'for / while', summary:'Repeat actions without copying and pasting code.',
+  sections:[
+    { h:'for loops', p:`<p>A <code>for</code> loop repeats a block of code. <code>range(5)</code> gives the numbers 0, 1, 2, 3 and 4. Each time around, the loop variable (here <code>i</code>) holds the next number.</p>`,
+      code:`for i in range(5):
+    print("Swing!", i)` },
+    { h:'Choosing the range', p:`<p><code>range(start, stop)</code> starts at <code>start</code> and stops just <strong>before</strong> <code>stop</code>. A third number sets the step, and a negative step counts down.</p>`,
+      code:`for n in range(1, 4):
+    print(n)
+
+for n in range(10, 0, -3):
+    print(n)` },
+    { h:'while loops', p:`<p>A <code>while</code> loop keeps going as long as its condition is true. Make sure something inside the loop changes, or it will run forever.</p>`,
+      code:`energy = 3
+while energy > 0:
+    print("Training... energy", energy)
+    energy = energy - 1
+print("Time to rest")` }
+  ],
+  ex:{ title:'Count the steps', prompt:`<p>Use a loop to print the numbers 1 to 5, each on its own line.</p>`,
+    starter:`# Use a for loop
+`, check:{type:'output', expect:'1\n2\n3\n4\n5'},
+    hints:[`<code>range(1, 6)</code> gives 1, 2, 3, 4, 5. The stop number is never included.`,
+           `Write <code>for n in range(1, 6):</code> and then an indented line that prints <code>n</code>.`],
+    solution:`for n in range(1, 6):
+    print(n)` } },
+
+{ id:'lists', title:'Lists', topic:'[ ]', summary:'Keep many values together, in order.',
+  sections:[
+    { h:'Making a list', p:`<p>A <strong>list</strong> holds several values in order, inside square brackets and separated by commas. Like strings, list positions start at 0.</p>`,
+      code:`party = ["Ada", "Linus", "Grace"]
+print(party)
+print(party[0])
+print(len(party))` },
+    { h:'Changing a list', p:`<p><code>.append()</code> adds an item to the end. You can also replace an item by assigning a new value to its position.</p>`,
+      code:`loot = ["coin", "gem"]
+loot.append("map")
+loot[0] = "gold coin"
+print(loot)` },
+    { h:'Looping over a list', p:`<p>A <code>for</code> loop can walk through a list directly. Each time around, the loop variable holds the next item.</p>`,
+      code:`party = ["Ada", "Linus", "Grace"]
+for hero in party:
+    print(f"{hero} joins the quest")` }
+  ],
+  ex:{ title:'Recruit a hero', prompt:`<p>Add <code>"Grace"</code> to the end of the <code>party</code> list, then print the whole list.</p>`,
+    starter:`party = ["Ada", "Linus"]
+
+`, check:{type:'output', expect:"['Ada', 'Linus', 'Grace']"},
+    hints:[`Lists have a method that adds an item to the end: <code>.append()</code>.`,
+           `Call it on the list with the new name inside, then print <code>party</code> on the next line.`],
+    solution:`party = ["Ada", "Linus"]
+
+party.append("Grace")
+print(party)` } },
+
+{ id:'functions', title:'Functions', topic:'def / return', summary:'Package code into reusable moves with names.',
+  sections:[
+    { h:'Defining a function', p:`<p>A <strong>function</strong> is a named block of code you can run whenever you like. Create one with <code>def</code>, a name, parentheses and a colon. Nothing happens until you <strong>call</strong> it by writing its name followed by parentheses.</p>`,
+      code:`def battle_cry():
+    print("For Python!")
+
+battle_cry()
+battle_cry()` },
+    { h:'Parameters', p:`<p>Parameters are the function's inputs. They go inside the parentheses and work like variables inside the function.</p>`,
+      code:`def greet(name):
+    print(f"Welcome, {name}!")
+
+greet("Ada")
+greet("Grace")` },
+    { h:'Returning a value', p:`<p><code>return</code> sends a result back to the code that called the function, so you can store it or use it again. <code>print</code> only shows a value on the screen; <code>return</code> hands it back to your program.</p>`,
+      code:`def add(a, b):
+    return a + b
+
+total = add(3, 4)
+print(total)
+print(add(10, total))` }
+  ],
+  ex:{ title:'Double damage', prompt:`<p>Write a function called <code>double</code> that takes a number <code>n</code> and <strong>returns</strong> it multiplied by 2.</p>`,
+    starter:`def double(n):
+    # replace pass with a return line
+    pass
+
+print(double(21))
+`, check:{type:'test', code:`assert double(21) == 42, "double(21) should return 42"
+assert double(0) == 0, "double(0) should return 0"
+assert double(-3) == -6, "double(-3) should return -6"`},
+    hints:[`Inside the function, replace <code>pass</code> with a line that starts with <code>return</code>.`,
+           `Return <code>n</code> times 2, and keep the line indented by 4 spaces so it stays inside the function.`],
+    solution:`def double(n):
+    return n * 2
+
+print(double(21))` } },
+
+{ id:'dicts', title:'Dictionaries', topic:'{ key: value }', summary:'Look things up by name instead of by position.',
+  sections:[
+    { h:'Keys and values', p:`<p>A <strong>dictionary</strong> stores pairs. Each <strong>key</strong> points to a <strong>value</strong>, like a word and its definition. Use curly braces, with a colon between each key and its value.</p>`,
+      code:`hero = {"name": "Ada", "hp": 100, "class": "mage"}
+print(hero["name"])
+print(hero["hp"])` },
+    { h:'Adding and changing', p:`<p>Assign to a key to change its value. If the key doesn't exist yet, Python adds it.</p>`,
+      code:`hero = {"name": "Ada", "hp": 100}
+hero["hp"] = 80
+hero["weapon"] = "staff"
+print(hero)` },
+    { h:'Looping over a dictionary', p:`<p><code>.items()</code> gives you each key and value together, which is handy in a <code>for</code> loop.</p>`,
+      code:`stats = {"strength": 7, "speed": 9}
+for stat, value in stats.items():
+    print(f"{stat}: {value}")` }
+  ],
+  ex:{ title:'Take a hit', prompt:`<p>The hero just took 20 damage. Change <code>hero["hp"]</code> to <code>80</code>, then print the hero's hp.</p>`,
+    starter:`hero = {"name": "Ada", "hp": 100}
+
+`, check:{type:'test', code:`assert hero["hp"] == 80, 'hero["hp"] should be 80'`},
+    hints:[`Use square brackets with the key in quotes to reach the value: <code>hero["hp"]</code>.`,
+           `Assign a new number to it with <code>=</code>, just like a variable, then print <code>hero["hp"]</code>.`],
+    solution:`hero = {"name": "Ada", "hp": 100}
+
+hero["hp"] = 80
+print(hero["hp"])` } }
+];
+
+const CHALLENGES = [
+{ id:'battle-cry', title:'Battle Cry', diff:'Easy', tags:['print','loops'], blurb:'Rally the troops with a chant.',
+  prompt:`<p>Print <code>For Python!</code> three times, each on its own line, and then print <code>Charge!</code></p><p class="label">Expected output</p><pre class="sample">For Python!
+For Python!
+For Python!
+Charge!</pre>`,
+  starter:`# Rally the troops
+`, check:{type:'output', expect:'For Python!\nFor Python!\nFor Python!\nCharge!'},
+  hints:[`You need four lines of output. Four <code>print()</code> calls work, and so does a loop.`,
+         `A loop can repeat the chant: <code>for i in range(3):</code> followed by an indented print.`,
+         `Put <code>print("Charge!")</code> after the loop with no indent, so it runs only once.`],
+  solution:`for i in range(3):
+    print("For Python!")
+print("Charge!")` },
+
+{ id:'hero-card', title:'Hero Card', diff:'Easy', tags:['variables','f-strings'], blurb:'Build a stat line from variables.',
+  prompt:`<p>Using the variables provided, print a hero card in exactly this format:</p><pre class="sample">Grace | HP 90 | bow</pre>`,
+  starter:`name = "Grace"
+hp = 90
+weapon = "bow"
+
+`, check:{type:'output', expect:'Grace | HP 90 | bow'},
+  hints:[`An f-string lets you drop variables straight into text: <code>f"..."</code>.`,
+         `Put each variable in curly braces, and type the <code>|</code> separators as plain text.`,
+         `Compare character by character: there is one space on each side of every <code>|</code>, and "HP" is uppercase.`],
+  solution:`name = "Grace"
+hp = 90
+weapon = "bow"
+
+print(f"{name} | HP {hp} | {weapon}")` },
+
+{ id:'potion-shop', title:'Potion Shop', diff:'Easy', tags:['math'], blurb:'Spend your gold wisely.',
+  prompt:`<p>You have <code>250</code> gold and potions cost <code>30</code> each. Print how many potions you can buy, then how much gold is left over, in this format:</p><pre class="sample">8 potions
+10 gold left</pre><p>Calculate both numbers from the variables, so your code would still work if the price changed.</p>`,
+  starter:`gold = 250
+price = 30
+
+`, check:{type:'output', expect:'8 potions\n10 gold left'},
+  hints:[`You can only buy whole potions. Which operator divides and drops the remainder?`,
+         `<code>gold // price</code> gives the number of potions, and <code>gold % price</code> gives what's left over.`,
+         `Print each line with an f-string, for example <code>print(f"{potions} potions")</code>.`],
+  solution:`gold = 250
+price = 30
+
+potions = gold // price
+left = gold % price
+print(f"{potions} potions")
+print(f"{left} gold left")` },
+
+{ id:'countdown', title:'Launch Countdown', diff:'Easy', tags:['loops','range'], blurb:'Count down from 5 to liftoff.',
+  prompt:`<p>Print a countdown from 5 to 1, then <code>Liftoff!</code></p><pre class="sample">5
+4
+3
+2
+1
+Liftoff!</pre>`,
+  starter:`# Count down here
+`, check:{type:'output', expect:'5\n4\n3\n2\n1\nLiftoff!'},
+  hints:[`<code>range()</code> can count backward if you give it a negative step.`,
+         `<code>range(5, 0, -1)</code> gives 5, 4, 3, 2, 1. The stop value 0 is not included.`,
+         `Print <code>Liftoff!</code> after the loop ends, with no indentation.`],
+  solution:`for n in range(5, 0, -1):
+    print(n)
+print("Liftoff!")` },
+
+{ id:'even-odd', title:'Even or Odd', diff:'Easy', tags:['functions','%'], blurb:'Write a function that spots even numbers.',
+  prompt:`<p>Write a function <code>is_even(n)</code> that <strong>returns</strong> <code>True</code> if <code>n</code> is even and <code>False</code> if it is odd.</p><pre class="sample">is_even(4)  →  True
+is_even(7)  →  False</pre>`,
+  starter:`def is_even(n):
+    pass
+
+print(is_even(4))
+print(is_even(7))
+`, check:{type:'test', code:`assert is_even(4) == True, "is_even(4) should return True"
+assert is_even(7) == False, "is_even(7) should return False"
+assert is_even(0) == True, "is_even(0) should return True"`},
+  hints:[`A number is even when dividing it by 2 leaves no remainder.`,
+         `<code>n % 2</code> gives the remainder. For even numbers it is 0.`,
+         `A comparison like <code>x == 0</code> already is <code>True</code> or <code>False</code>, so you can return it directly.`],
+  solution:`def is_even(n):
+    return n % 2 == 0
+
+print(is_even(4))
+print(is_even(7))` },
+
+{ id:'grade-gate', title:'Grade Gate', diff:'Medium', tags:['if / elif','functions'], blurb:'Turn scores into letter grades.',
+  prompt:`<p>Write <code>grade(score)</code> that returns a letter grade:</p><ul><li><code>"A"</code> for 90 and above</li><li><code>"B"</code> for 80 to 89</li><li><code>"C"</code> for 70 to 79</li><li><code>"F"</code> for anything lower</li></ul>`,
+  starter:`def grade(score):
+    pass
+
+print(grade(95))
+print(grade(72))
+`, check:{type:'test', code:`for s, g in [(95, "A"), (90, "A"), (85, "B"), (80, "B"), (72, "C"), (70, "C"), (50, "F")]:
+    assert grade(s) == g, "grade(" + str(s) + ") should return " + g + ", but got " + str(grade(s))`},
+  hints:[`Use <code>if</code>, <code>elif</code> and <code>else</code> inside the function.`,
+         `Check the highest grade first: <code>if score &gt;= 90:</code>. Python stops at the first condition that is true.`,
+         `Each branch should <code>return</code> a letter in quotes, like <code>return "A"</code>.`],
+  solution:`def grade(score):
+    if score >= 90:
+        return "A"
+    elif score >= 80:
+        return "B"
+    elif score >= 70:
+        return "C"
+    else:
+        return "F"
+
+print(grade(95))
+print(grade(72))` },
+
+{ id:'fizzbuzz', title:'FizzBuzz', diff:'Medium', tags:['loops','%','if / elif'], blurb:'The classic coding warm-up.',
+  prompt:`<p>Print the numbers from 1 to 15, but:</p><ul><li>for multiples of 3, print <code>Fizz</code> instead</li><li>for multiples of 5, print <code>Buzz</code> instead</li><li>for multiples of both, print <code>FizzBuzz</code></li></ul><pre class="sample">1
+2
+Fizz
+4
+Buzz
+...
+14
+FizzBuzz</pre>`,
+  starter:`for n in range(1, 16):
+    print(n)
+`, check:{type:'output', expect:'1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz'},
+  hints:[`A number is a multiple of 3 when <code>n % 3 == 0</code>.`,
+         `Check for "both" first. A number divisible by 15 is divisible by 3 and by 5.`,
+         `Order your checks: 15, then 3, then 5, then <code>else: print(n)</code>.`],
+  solution:`for n in range(1, 16):
+    if n % 15 == 0:
+        print("FizzBuzz")
+    elif n % 3 == 0:
+        print("Fizz")
+    elif n % 5 == 0:
+        print("Buzz")
+    else:
+        print(n)` },
+
+{ id:'loot-total', title:'Count the Loot', diff:'Medium', tags:['lists','loops'], forbid:['sum('], blurb:'Add up treasure without using sum().',
+  prompt:`<p>Write <code>total(loot)</code> that returns the sum of all the numbers in the list. Don't use the built-in <code>sum()</code>; use a loop.</p><pre class="sample">total([10, 20, 5])  →  35
+total([])  →  0</pre>`,
+  starter:`def total(loot):
+    pass
+
+print(total([10, 20, 5]))
+`, check:{type:'test', code:`assert total([10, 20, 5]) == 35, "total([10, 20, 5]) should return 35"
+assert total([]) == 0, "total([]) should return 0"
+assert total([7]) == 7, "total([7]) should return 7"`},
+  hints:[`Start a running total at 0 before the loop.`,
+         `Loop through the list with <code>for coin in loot:</code> and add each coin to your total.`,
+         `<code>return</code> the total after the loop has finished, not inside it.`],
+  solution:`def total(loot):
+    result = 0
+    for coin in loot:
+        result = result + coin
+    return result
+
+print(total([10, 20, 5]))` },
+
+{ id:'reverse-spell', title:'Reverse the Spell', diff:'Medium', tags:['strings','loops'], blurb:'Read a magic word backward.',
+  prompt:`<p>Write <code>reverse(word)</code> that returns the word spelled backward.</p><pre class="sample">reverse("python")  →  "nohtyp"</pre>`,
+  starter:`def reverse(word):
+    pass
+
+print(reverse("python"))
+`, check:{type:'test', code:`assert reverse("python") == "nohtyp", 'reverse("python") should return "nohtyp"'
+assert reverse("a") == "a", 'reverse("a") should return "a"'
+assert reverse("") == "", 'reverse("") should return an empty string'`},
+  hints:[`One way: start with an empty string <code>""</code> and build the result one letter at a time.`,
+         `If you put each letter in <strong>front</strong> of what you have so far, it ends up reversed: <code>result = letter + result</code>.`,
+         `Shortcut: slicing with a step of -1, <code>word[::-1]</code>, also reverses a string.`],
+  solution:`def reverse(word):
+    result = ""
+    for letter in word:
+        result = letter + result
+    return result
+
+print(reverse("python"))` },
+
+{ id:'vowel-hunter', title:'Vowel Hunter', diff:'Medium', tags:['strings','loops'], blurb:'Count every vowel in a sentence.',
+  prompt:`<p>Write <code>count_vowels(text)</code> that returns how many vowels (a, e, i, o, u) are in the text. Count uppercase and lowercase vowels.</p><pre class="sample">count_vowels("Python")  →  1
+count_vowels("AEIOU aeiou")  →  10</pre>`,
+  starter:`def count_vowels(text):
+    pass
+
+print(count_vowels("Python"))
+`, check:{type:'test', code:`assert count_vowels("Python") == 1, 'count_vowels("Python") should return 1'
+assert count_vowels("AEIOU aeiou") == 10, 'count_vowels("AEIOU aeiou") should return 10'
+assert count_vowels("rhythm") == 0, 'count_vowels("rhythm") should return 0'`},
+  hints:[`Loop through each letter and keep a counter that starts at 0.`,
+         `<code>letter in "aeiou"</code> is <code>True</code> when the letter is a vowel.`,
+         `Use <code>text.lower()</code> first so uppercase vowels count too.`],
+  solution:`def count_vowels(text):
+    count = 0
+    for letter in text.lower():
+        if letter in "aeiou":
+            count = count + 1
+    return count
+
+print(count_vowels("Python"))` },
+
+{ id:'biggest-monster', title:'Biggest Monster', diff:'Hard', tags:['lists','loops'], forbid:['max('], blurb:'Find the strongest foe without max().',
+  prompt:`<p>Write <code>biggest(nums)</code> that returns the largest number in a list that has at least one item. Don't use <code>max()</code>.</p><pre class="sample">biggest([3, 9, 2])  →  9
+biggest([-5, -2, -9])  →  -2</pre>`,
+  starter:`def biggest(nums):
+    pass
+
+print(biggest([3, 9, 2]))
+`, check:{type:'test', code:`assert biggest([3, 9, 2]) == 9, "biggest([3, 9, 2]) should return 9"
+assert biggest([-5, -2, -9]) == -2, "biggest([-5, -2, -9]) should return -2"
+assert biggest([7]) == 7, "biggest([7]) should return 7"`},
+  hints:[`Keep track of the biggest number you've seen so far as you loop.`,
+         `Start "biggest so far" at the first item, <code>nums[0]</code>, not at 0. Otherwise a list of negative numbers breaks it.`,
+         `Inside the loop: if the current number is bigger than your best, replace your best.`],
+  solution:`def biggest(nums):
+    best = nums[0]
+    for n in nums:
+        if n > best:
+            best = n
+    return best
+
+print(biggest([3, 9, 2]))` },
+
+{ id:'inventory', title:'Inventory Counter', diff:'Hard', tags:['dictionaries','loops'], blurb:'Tally items into a dictionary.',
+  prompt:`<p>Write <code>count_items(items)</code> that takes a list of item names and returns a dictionary counting how many of each there are.</p><pre class="sample">count_items(["sword", "potion", "potion"])
+→  {"sword": 1, "potion": 2}</pre>`,
+  starter:`def count_items(items):
+    pass
+
+print(count_items(["sword", "potion", "potion"]))
+`, check:{type:'test', code:`assert count_items(["sword", "potion", "potion"]) == {"sword": 1, "potion": 2}, 'count_items(["sword", "potion", "potion"]) should return {"sword": 1, "potion": 2}'
+assert count_items([]) == {}, "count_items([]) should return an empty dictionary"
+assert count_items(["gem", "gem", "gem"]) == {"gem": 3}, 'count_items(["gem", "gem", "gem"]) should return {"gem": 3}'`},
+  hints:[`Start with an empty dictionary: <code>counts = {}</code>.`,
+         `For each item: if it is already a key, add 1 to it. If not, set it to 1. <code>if item in counts:</code> checks for a key.`,
+         `Return the dictionary after the loop finishes.`],
+  solution:`def count_items(items):
+    counts = {}
+    for item in items:
+        if item in counts:
+            counts[item] = counts[item] + 1
+        else:
+            counts[item] = 1
+    return counts
+
+print(count_items(["sword", "potion", "potion"]))` },
+
+{ id:'palindrome', title:'Palindrome Guard', diff:'Hard', tags:['strings','functions'], blurb:'Spot phrases that read the same both ways.',
+  prompt:`<p>Write <code>is_palindrome(text)</code> that returns <code>True</code> if the text reads the same forward and backward, ignoring spaces and capital letters.</p><pre class="sample">is_palindrome("Racecar")  →  True
+is_palindrome("Never odd or even")  →  True
+is_palindrome("Python")  →  False</pre>`,
+  starter:`def is_palindrome(text):
+    pass
+
+print(is_palindrome("Racecar"))
+`, check:{type:'test', code:`assert is_palindrome("Racecar") == True, 'is_palindrome("Racecar") should return True'
+assert is_palindrome("Never odd or even") == True, 'is_palindrome("Never odd or even") should return True'
+assert is_palindrome("Python") == False, 'is_palindrome("Python") should return False'`},
+  hints:[`Clean the text first: make it lowercase and remove the spaces. <code>.replace(" ", "")</code> removes spaces.`,
+         `Then compare the cleaned text with the same text reversed.`,
+         `<code>cleaned[::-1]</code> reverses a string. Return the result of comparing the two with <code>==</code>.`],
+  solution:`def is_palindrome(text):
+    cleaned = text.lower().replace(" ", "")
+    return cleaned == cleaned[::-1]
+
+print(is_palindrome("Racecar"))` }
+];
+
+const XP_LESSON = 50, XP_DAILY = 10;
+const XP_BY = { Easy:25, Medium:50, Hard:100 };
+const LEVELS = [0, 100, 220, 360, 520, 700, 900, 1100];
+const RANKS = ['Recruit','Apprentice','Squire','Knight','Champion','Warlord','Legend','Code Warrior'];
+const MILESTONES = [3, 7, 14, 30, 60, 100];
+
+/* ---------- icons ---------- */
+const ICONS = {
+  home:'<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/>',
+  book:'<path d="M4 4h11a3 3 0 013 3v13H7a3 3 0 01-3-3V4z"/><path d="M4 17a3 3 0 013-3h11"/>',
+  sword:'<path d="M14.5 3H21v6.5L10 20.5 3.5 14z"/><path d="M6.5 11.5l6 6"/><path d="M3 21l3-3"/>',
+  flame:'<path fill="currentColor" stroke="none" d="M12 2c1 4 5 5.5 5 11a5 5 0 01-10 0c0-2.6 1.2-4.2 2.6-5.2 0 2 1 3.2 2 3.2 0-3.2-1.1-6 .4-9z"/>',
+  bolt:'<path fill="currentColor" stroke="none" d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/>',
+  play:'<path fill="currentColor" stroke="none" d="M7 4l13 8-13 8z"/>',
+  check:'<path d="M4 12.5l5 5L20 6.5"/>',
+  x:'<path d="M6 6l12 12M18 6L6 18"/>',
+  bulb:'<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"/>',
+  lock:'<path d="M6 11h12v10H6z"/><path d="M8 11V7a4 4 0 018 0v4"/>',
+  star:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
+  crown:'<path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/>',
+  shield:'<path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/>',
+  target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>',
+  chat:'<path d="M4 5h16v11H9l-5 4z"/>',
+  left:'<path d="M15 5l-7 7 7 7"/>',
+  right:'<path d="M9 5l7 7-7 7"/>',
+  up:'<path d="M5 15l7-7 7 7"/>',
+  reset:'<path d="M4 4v6h6"/><path d="M5.5 15a7 7 0 101.6-8.2L4 10"/>'
+};
+const icon = (n, cls='') => `<svg class="i ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
+
+/* ---------- helpers ---------- */
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+const dayKey = (d=new Date()) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parseDay = k => { const [y,m,d] = k.split('-').map(Number); return new Date(y, m-1, d); };
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
+const plural = (n, w) => `${n} ${w}${n===1?'':'s'}`;
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- state + persistence ---------- */
+const LS_KEY = 'code-warrior.progress.v1';
+const blank = () => ({ lessons:{}, challenges:{}, hints:{}, solutions:{}, drafts:{}, days:[], activity:[], updated:0 });
+function normalize(s){
+  const b = blank(); if (!s || typeof s !== 'object') return b;
+  for (const k of ['lessons','challenges','hints','solutions','drafts']) if (s[k] && typeof s[k] === 'object' && !Array.isArray(s[k])) b[k] = s[k];
+  if (Array.isArray(s.days)) b.days = s.days.filter(d => typeof d === 'string');
+  if (Array.isArray(s.activity)) b.activity = s.activity.filter(a => a && typeof a.text === 'string');
+  b.updated = +s.updated || 0;
+  return b;
+}
+function merge(a, b){
+  const o = blank();
+  o.lessons = { ...a.lessons, ...b.lessons };
+  for (const id of new Set([...Object.keys(a.challenges), ...Object.keys(b.challenges)])) {
+    const x = a.challenges[id], y = b.challenges[id];
+    o.challenges[id] = !x ? y : !y ? x : ((y.xp||0) > (x.xp||0) ? y : x);
+  }
+  for (const k of new Set([...Object.keys(a.hints), ...Object.keys(b.hints)])) o.hints[k] = Math.max(a.hints[k]||0, b.hints[k]||0);
+  o.solutions = { ...a.solutions, ...b.solutions };
+  o.drafts = (b.updated > a.updated) ? { ...a.drafts, ...b.drafts } : { ...b.drafts, ...a.drafts };
+  o.days = [...new Set([...a.days, ...b.days])].sort().slice(-400);
+  const seen = new Set();
+  o.activity = [...a.activity, ...b.activity].filter(x => { const k = x.t + x.text; if (seen.has(k)) return false; seen.add(k); return true; })
+    .sort((p, q) => q.t - p.t).slice(0, 20);
+  o.updated = Math.max(a.updated, b.updated);
+  return o;
+}
+function loadLocal(){ try { return normalize(JSON.parse(localStorage.getItem(LS_KEY))); } catch { return blank(); } }
+function saveLocal(){ try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch {} }
+
+let state = loadLocal();
+let cloudDoc = null, writing = false, queued = false, saveTimer = null;
+
+function persist(){
+  state.updated = Date.now();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { saveLocal(); flushCloud(); }, 500);
+}
+async function flushCloud(){
+  if (!cloudDoc) return;
+  if (writing) { queued = true; return; }
+  writing = true;
+  try { await cloudDoc.set({ state: JSON.parse(JSON.stringify(state)) }); }
+  catch (e) { if (e && ['invalid_argument','revoked','not_granted','capability_disabled'].includes(e.code)) { cloudDoc = null; setSync(false); } }
+  writing = false;
+  if (queued) { queued = false; flushCloud(); }
+}
+function setSync(cloud){
+  $('#sync').textContent = cloud ? 'Progress is saved to your account, so it follows you to any device.' : 'Progress is saved in this browser.';
+}
+async function initCloud(){
+  if (!window.claude || !window.claude.use) return;
+  try {
+    const [db, user] = await Promise.all([claude.use('db'), claude.use('user')]);
+    if (!db || !user) return;
+    const id = await user.id();
+    if (!id) return;
+    const ref = db.doc('data/users/' + id + '/progress');
+    const snap = await ref.get();
+    cloudDoc = ref;
+    if (snap.exists && snap.data() && snap.data().state) {
+      state = merge(state, normalize(snap.data().state));
+      checkIn(true);
+      saveLocal();
+      if (['home','lessons','challenges'].includes(route.view)) render(); else renderChrome();
+    }
+    setSync(true);
+    persist();
+  } catch { cloudDoc = null; }
+}
+
+/* ---------- derived numbers ---------- */
+const doneLessons = () => LESSONS.filter(l => state.lessons[l.id]).length;
+const doneChallenges = (diff) => CHALLENGES.filter(c => state.challenges[c.id] && (!diff || c.diff === diff)).length;
+function totalXP(){
+  let x = doneLessons() * XP_LESSON + state.days.length * XP_DAILY;
+  for (const c of CHALLENGES) if (state.challenges[c.id]) x += state.challenges[c.id].xp || 0;
+  return x;
+}
+function levelInfo(x){
+  let i = 0; while (i + 1 < LEVELS.length && x >= LEVELS[i+1]) i++;
+  return { level: i + 1, floor: LEVELS[i], next: LEVELS[i+1] ?? null, rank: RANKS[i], nextRank: RANKS[i+1] ?? null };
+}
+function streakInfo(){
+  const set = new Set(state.days);
+  let current = 0, d = new Date();
+  if (!set.has(dayKey(d))) d = addDays(d, -1);
+  while (set.has(dayKey(d))) { current++; d = addDays(d, -1); }
+  let best = 0, run = 0, prev = null;
+  for (const k of [...set].sort()) {
+    const dt = parseDay(k);
+    run = (prev && dayKey(addDays(prev, 1)) === k) ? run + 1 : 1;
+    best = Math.max(best, run); prev = dt;
+  }
+  const today = new Date();
+  const week = Array.from({length:7}, (_, i) => {
+    const dt = addDays(today, i - 6);
+    return { label: dt.toLocaleDateString(undefined, { weekday:'short' }).slice(0, 2).toUpperCase(), on: set.has(dayKey(dt)), today: i === 6 };
+  });
+  const next = MILESTONES.find(m => m > current) ?? null;
+  return { current, best, week, next };
+}
+function rewardFor(ch){
+  const base = XP_BY[ch.diff], k = 'c:' + ch.id;
+  if (state.solutions[k]) return Math.round(base * 0.25);
+  return Math.round(base * Math.max(0.4, 1 - 0.2 * (state.hints[k] || 0)));
+}
+function badges(){
+  const s = streakInfo();
+  const clean = CHALLENGES.some(c => c.diff !== 'Easy' && state.challenges[c.id] && !state.challenges[c.id].hints && !state.challenges[c.id].sol);
+  return [
+    { n:'First Steps', d:'Finish a lesson', i:'book', got: doneLessons() >= 1 },
+    { n:'First Victory', d:'Clear a challenge', i:'sword', got: doneChallenges() >= 1 },
+    { n:'On Fire', d:'3-day streak', i:'flame', got: s.best >= 3 },
+    { n:'Unstoppable', d:'7-day streak', i:'bolt', got: s.best >= 7 },
+    { n:'No Help Needed', d:'Clear a Medium or Hard with no hints', i:'target', got: clean },
+    { n:'Heavy Hitter', d:'Clear a Hard challenge', i:'shield', got: doneChallenges('Hard') >= 1 },
+    { n:'Scholar', d:'Finish every lesson', i:'star', got: doneLessons() === LESSONS.length },
+    { n:'Champion', d:'Clear every challenge', i:'crown', got: doneChallenges() === CHALLENGES.length }
+  ];
+}
+function addActivity(kind, text){
+  state.activity.unshift({ t: Date.now(), kind, text });
+  state.activity = state.activity.slice(0, 20);
+}
+function checkIn(silent){
+  const k = dayKey();
+  if (state.days.includes(k)) return false;
+  state.days.push(k); state.days.sort(); state.days = state.days.slice(-400);
+  const s = streakInfo();
+  addActivity('streak', s.current > 1 ? `Checked in for day ${s.current} of your streak (+${XP_DAILY} XP)` : `Checked in for today (+${XP_DAILY} XP)`);
+  persist();
+  if (!silent) setTimeout(() => toast(icon('flame'), s.current > 1 ? `${s.current}-day streak! +${XP_DAILY} XP` : `Daily check-in +${XP_DAILY} XP`), 600);
+  return true;
+}
+
+/* ---------- python runner (Skulpt) ---------- */
+function runPython(code){
+  return new Promise(resolve => {
+    if (typeof Sk === 'undefined') { resolve({ ok:false, out:'', err:{ type:'Loading', msg:'The Python engine is still loading. Try again in a moment.' } }); return; }
+    let out = '';
+    Sk.configure({
+      output: t => { out += t; },
+      read: f => { if (Sk.builtinFiles === undefined || Sk.builtinFiles.files[f] === undefined) throw "File not found: '" + f + "'"; return Sk.builtinFiles.files[f]; },
+      __future__: Sk.python3,
+      execLimit: 5000,
+      yieldLimit: 100,
+      inputfunTakesPrompt: true,
+      inputfun: p => { out += (p || '') + '\n'; return ''; }
+    });
+    Sk.misceval.asyncToPromise(() => Sk.importMainWithBody('<stdin>', false, code, true))
+      .then(() => resolve({ ok:true, out }), e => resolve({ ok:false, out, err: formatErr(e) }));
+  });
+}
+function formatErr(e){
+  const raw = (e && e.toString) ? e.toString() : String(e);
+  const m = raw.match(/^(\w+):\s*([\s\S]*?)(?:\s+on line (\d+))?\s*$/);
+  let line = m && m[3] ? +m[3] : null;
+  if (!line && e && e.traceback && e.traceback.length) line = e.traceback[0].lineno || null;
+  return { type: m ? m[1] : 'Error', msg: m ? m[2] : raw, line };
+}
+const TIPS = {
+  SyntaxError:'Python couldn\'t read this line. Look for a missing colon <code>:</code> at the end of an <code>if</code>, <code>for</code> or <code>def</code> line, a missing quote, or a bracket that was never closed.',
+  IndentationError:'Code inside an <code>if</code>, <code>for</code>, <code>while</code> or <code>def</code> needs to be indented by 4 spaces, and lines in the same block need the same indent.',
+  NameError:'Python doesn\'t know that name. Check the spelling, make sure you created it before using it, and remember that text needs quotes around it.',
+  TypeError:'Two values of different types got mixed, like adding text to a number. <code>str()</code> turns a number into text and <code>int()</code> turns text into a number.',
+  IndexError:'You asked for a position that doesn\'t exist. Positions start at 0, so the last item in a list of 3 is at position 2.',
+  KeyError:'That key isn\'t in the dictionary. Check the spelling and the quotes.',
+  ZeroDivisionError:'Something was divided by zero, which isn\'t allowed in math or in Python.',
+  ValueError:'A value had the right type but the wrong content, like <code>int("abc")</code>.',
+  AttributeError:'That value doesn\'t have the method you called. Check the spelling, like <code>.append()</code> or <code>.upper()</code>.',
+  TimeLimitError:'Your code ran for too long. Check for a loop that never stops, like a <code>while</code> loop whose condition never becomes false.'
+};
+const norm = s => s.replace(/\r/g, '').split('\n').map(l => l.replace(/\s+$/, '')).join('\n').trim();
+
+async function checkCode(item, code){
+  for (const f of item.forbid || []) if (code.includes(f)) return { pass:false, out:'', note:`This challenge asks you to solve it without <code>${esc(f)})</code>. Try a loop instead.` };
+  if (item.check.type === 'output') {
+    const r = await runPython(code);
+    if (!r.ok) return { pass:false, out:r.out, err:r.err };
+    const got = norm(r.out), exp = norm(item.check.expect);
+    return got === exp ? { pass:true, out:r.out } : { pass:false, out:r.out, diff:{ exp, got } };
+  }
+  const userLines = code.split('\n').length;
+  const r = await runPython(code + '\n\n' + item.check.code);
+  if (!r.ok) {
+    if (r.err.type === 'AssertionError') return { pass:false, out:r.out, note:`A test didn't pass: ${esc(r.err.msg)}.` };
+    if (r.err.line && r.err.line > userLines) r.err.line = null;
+    return { pass:false, out:r.out, err:r.err };
+  }
+  return { pass:true, out:r.out };
+}
+
+/* ---------- code editor ---------- */
+const KW = new Set('def return if elif else for while in not and or import from as class break continue pass lambda try except finally with is global'.split(' '));
+const CONST = new Set(['True','False','None']);
+const BUILTIN = new Set('print len range input int str float list dict sum max min abs round sorted type enumerate bool'.split(' '));
+const TOK = /(#[^\n]*)|([fF]?(?:"(?:\\.|[^"\\\n])*"?|'(?:\\.|[^'\\\n])*'?))|(\b\d+(?:\.\d+)?\b)|([A-Za-z_]\w*)/g;
+function hl(src){
+  let out = '', last = 0;
+  src.replace(TOK, (m, com, str, num, id, off) => {
+    out += esc(src.slice(last, off)); last = off + m.length;
+    if (com) out += `<span class="t-com">${esc(m)}</span>`;
+    else if (str) out += `<span class="t-str">${esc(m)}</span>`;
+    else if (num) out += `<span class="t-num">${m}</span>`;
+    else if (KW.has(m)) out += `<span class="t-kw">${m}</span>`;
+    else if (CONST.has(m)) out += `<span class="t-const">${m}</span>`;
+    else if (BUILTIN.has(m)) out += `<span class="t-fn">${m}</span>`;
+    else out += esc(m);
+    return m;
+  });
+  return out + esc(src.slice(last));
+}
+const editors = {};
+function makeEditor(host, key, code, { minLines = 3, onChange, onRun, label = 'Python code' } = {}){
+  host.className = 'editor';
+  host.innerHTML = `<div class="gutter" aria-hidden="true"></div><div class="code-wrap"><pre aria-hidden="true"><code></code></pre><textarea id="ed-${key}" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off" aria-label="${esc(label)}"></textarea></div>`;
+  const ta = $('textarea', host), pre = $('pre', host), codeEl = $('code', pre), gut = $('.gutter', host);
+  codeEl.style.cssText = 'background:none;padding:0;color:inherit;font-size:inherit';
+  ta.value = code;
+  let escMode = false;
+  const paint = () => {
+    codeEl.innerHTML = hl(ta.value) + '\n';
+    const n = ta.value.split('\n').length;
+    gut.textContent = Array.from({ length: n }, (_, i) => i + 1).join('\n');
+    ta.style.height = (Math.max(n, minLines) * 22.4 + 40) + 'px';
+  };
+  const insert = t => {
+    ta.focus();
+    const ok = t === '' ? document.execCommand('delete') : document.execCommand('insertText', false, t);
+    if (!ok) { ta.setRangeText(t, ta.selectionStart, ta.selectionEnd, 'end'); ta.dispatchEvent(new Event('input')); }
+  };
+  ta.addEventListener('input', () => { paint(); onChange && onChange(ta.value); });
+  ta.addEventListener('scroll', () => { pre.scrollLeft = ta.scrollLeft; });
+  ta.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { escMode = true; return; }
+    const wasEsc = escMode; escMode = false;
+    const s = ta.selectionStart, v = ta.value, ls = v.lastIndexOf('\n', s - 1) + 1;
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); onRun && onRun(); return; }
+    if (e.key === 'Tab' && !wasEsc) {
+      e.preventDefault();
+      if (e.shiftKey) { const k = (v.slice(ls).match(/^ {1,4}/) || [''])[0].length; if (k) { ta.setSelectionRange(ls, ls + k); insert(''); } }
+      else insert('    ');
+    } else if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      const line = v.slice(ls, s); let ind = line.match(/^ */)[0];
+      if (/:\s*$/.test(line)) ind += '    ';
+      insert('\n' + ind);
+    } else if (e.key === 'Backspace' && s === ta.selectionEnd) {
+      const before = v.slice(ls, s);
+      if (before.length >= 4 && /^ +$/.test(before)) { e.preventDefault(); const k = before.length % 4 || 4; ta.setSelectionRange(s - k, s); insert(''); }
+    }
+  });
+  paint();
+  return { get: () => ta.value, set: val => { ta.value = val; paint(); onChange && onChange(val); }, focus: () => ta.focus() };
+}
+
+/* ---------- UI feedback ---------- */
+let toastTimer = null;
+function toast(ic, text){
+  const t = $('#toast'); t.innerHTML = ic + `<span>${esc(text)}</span>`; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+function confetti(){
+  if (reduceMotion) return;
+  const cv = $('#fx'), cx = cv.getContext('2d'), dpr = window.devicePixelRatio || 1;
+  cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; cx.scale(dpr, dpr);
+  const cs = getComputedStyle(document.documentElement);
+  const cols = ['--coral','--sun','--cyan','--violet'].map(v => cs.getPropertyValue(v).trim());
+  const ps = Array.from({ length: 120 }, () => ({
+    x: innerWidth / 2 + (Math.random() - .5) * 120, y: innerHeight * .45,
+    vx: (Math.random() - .5) * 16, vy: -Math.random() * 15 - 4, r: Math.random() * Math.PI,
+    vr: (Math.random() - .5) * .4, w: 6 + Math.random() * 6, h: 3 + Math.random() * 4, c: cols[Math.floor(Math.random() * cols.length)]
+  }));
+  const t0 = performance.now();
+  (function frame(now){
+    const t = now - t0; cx.clearRect(0, 0, innerWidth, innerHeight);
+    for (const p of ps) {
+      p.vy += .45; p.vx *= .985; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+      cx.save(); cx.translate(p.x, p.y); cx.rotate(p.r); cx.globalAlpha = Math.max(0, 1 - t / 1800);
+      cx.fillStyle = p.c; cx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); cx.restore();
+    }
+    if (t < 1800) requestAnimationFrame(frame); else cx.clearRect(0, 0, innerWidth, innerHeight);
+  })(t0);
+}
+
+/* ---------- routing + chrome ---------- */
+let route = { view:'home' };
+let chFilter = 'All';
+let sampleFn = null;
+const view = $('#view');
+const ctx = {};
+const closed = {};
+
+function go(v, id){
+  route = { view: v, id };
+  render();
+  window.scrollTo(0, 0);
+  view.focus({ preventScroll: true });
+}
+function renderChrome(){
+  const x = totalXP(), L = levelInfo(x), s = streakInfo();
+  $('#chip-st').textContent = s.current;
+  $('#chip-xp').textContent = x;
+  $('#chip-lv').textContent = 'Lv ' + L.level;
+  $('#chip-lv').title = `Level ${L.level}: ${L.rank}`;
+  const top = route.view === 'lesson' ? 'lessons' : route.view === 'challenge' ? 'challenges' : route.view;
+  $$('[data-nav]').forEach(b => b.dataset.nav === top ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
+}
+function render(){
+  renderChrome();
+  for (const k in editors) delete editors[k];
+  if (route.view === 'lessons') renderLessons();
+  else if (route.view === 'lesson') renderLesson(route.id);
+  else if (route.view === 'challenges') renderChallenges();
+  else if (route.view === 'challenge') renderChallenge(route.id);
+  else renderHome();
+}
+
+/* ---------- views ---------- */
+function greeting(){ const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; }
+function relTime(t){
+  const d = new Date(t), k = dayKey(d);
+  if (k === dayKey()) return 'Today, ' + d.toLocaleTimeString(undefined, { hour:'numeric', minute:'2-digit' });
+  if (k === dayKey(addDays(new Date(), -1))) return 'Yesterday';
+  return d.toLocaleDateString(undefined, { month:'short', day:'numeric' });
+}
+
+function renderHome(){
+  const x = totalXP(), L = levelInfo(x), s = streakInfo();
+  const ld = doneLessons(), cd = doneChallenges();
+  const pct = L.next ? (x - L.floor) / (L.next - L.floor) : 1;
+  const overall = Math.round((ld + cd) / (LESSONS.length + CHALLENGES.length) * 100);
+  const nextLesson = LESSONS.find(l => !state.lessons[l.id]);
+  const nextCh = ['Easy','Medium','Hard'].map(d => CHALLENGES.find(c => c.diff === d && !state.challenges[c.id])).find(Boolean);
+  const C = 2 * Math.PI * 52;
+  const line = (ld + cd === 0)
+    ? 'Your training starts here. Begin with Lesson 1 to learn how Python talks, then test yourself in the challenges.'
+    : `You've finished ${ld} of ${LESSONS.length} lessons and cleared ${cd} of ${CHALLENGES.length} challenges. ${s.current >= 2 ? 'Keep the streak burning.' : 'Come back tomorrow to build a streak.'}`;
+  const rows = [
+    ['Lessons', ld, LESSONS.length, 'var(--coral)'],
+    ['Easy challenges', doneChallenges('Easy'), CHALLENGES.filter(c => c.diff === 'Easy').length, 'var(--cyan)'],
+    ['Medium challenges', doneChallenges('Medium'), CHALLENGES.filter(c => c.diff === 'Medium').length, 'var(--sun)'],
+    ['Hard challenges', doneChallenges('Hard'), CHALLENGES.filter(c => c.diff === 'Hard').length, 'var(--violet)']
+  ];
+  const actIcon = { lesson:'book', challenge:'sword', streak:'flame', level:'crown' };
+
+  view.innerHTML = `
+  <div class="dash">
+    <section class="hero cut">
+      <div class="hero-main">
+        <div class="eyebrow">Base camp</div>
+        <h1>${greeting()}, warrior.</h1>
+        <p class="lede">${line}</p>
+        <div class="xpbar" role="progressbar" aria-label="XP toward the next level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct * 100)}"><span style="width:${pct * 100}%"></span></div>
+        <div class="xpmeta"><span><b>${x} XP</b> earned</span><span>${L.next ? `${L.next - x} XP to Level ${L.level + 1}, ${L.nextRank}` : 'Top rank reached'}</span></div>
+      </div>
+      <div class="emblem">
+        <div class="emblem-shape"><span class="emblem-lv"><small>LEVEL</small>${L.level}</span></div>
+        <div class="emblem-rank">${L.rank}</div>
+      </div>
+    </section>
+
+    <section class="card s5">
+      <div class="card-head"><h2>Daily streak</h2><span class="dim">Best: ${plural(s.best, 'day')}</span></div>
+      <div class="streak-big">${icon('flame')}<span class="n">${s.current}</span><span class="u">${s.current === 1 ? 'day' : 'days'} in a row</span></div>
+      <div class="week" aria-label="Last 7 days">${s.week.map(d => `<div class="day${d.on ? ' on' : ''}${d.today ? ' today' : ''}"><span class="dl">${d.label}</span><span class="dot" title="${d.on ? 'Checked in' : 'Missed'}">${d.on ? icon('flame') : ''}</span></div>`).join('')}</div>
+      <div class="milestone">
+        <div class="mbar"><span style="width:${s.next ? Math.min(100, s.current / s.next * 100) : 100}%"></span></div>
+        <p>${s.next ? `${plural(s.next - s.current, 'more day')} to reach a ${s.next}-day streak.` : 'You have passed every streak milestone.'} Open Code Warrior once a day to keep it going.</p>
+      </div>
+    </section>
+
+    <section class="card s7">
+      <div class="card-head"><h2>Progress</h2><span class="dim">${totalXP()} XP total</span></div>
+      <div class="prog-wrap">
+        <div class="ring">
+          <svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52" fill="none" style="stroke:var(--well)" stroke-width="12"/><circle cx="60" cy="60" r="52" fill="none" style="stroke:var(--cyan)" stroke-width="12" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - overall / 100)}"/></svg>
+          <div class="rv"><b>${overall}%</b><span>complete</span></div>
+        </div>
+        <div class="prows">${rows.map(([n, a, b, c]) => `<div><div class="prow-top"><span>${n}</span><span>${a} / ${b}</span></div><div class="pbar"><span style="width:${b ? a / b * 100 : 0}%;background:${c}"></span></div></div>`).join('')}</div>
+      </div>
+    </section>
+
+    <section class="card s7">
+      <div class="card-head"><h2>Up next</h2></div>
+      <div class="next-grid">
+        ${nextLesson ? `<button class="tile cut" data-lesson="${nextLesson.id}"><span class="eyebrow">Lesson ${LESSONS.indexOf(nextLesson) + 1}</span><span class="tt">${nextLesson.title}</span><span class="ts">${nextLesson.summary}</span><span class="go">Start lesson ${icon('right')}</span></button>`
+          : `<div class="tile cut"><span class="eyebrow">Lessons</span><span class="tt">All lessons complete</span><span class="ts">You've covered the core of Python. Revisit any lesson from the Lessons page.</span></div>`}
+        ${nextCh ? `<button class="tile cut" data-ch="${nextCh.id}"><span class="eyebrow"><span class="pill d-${nextCh.diff}">${nextCh.diff}</span> +${XP_BY[nextCh.diff]} XP</span><span class="tt">${nextCh.title}</span><span class="ts">${nextCh.blurb}</span><span class="go">Take it on ${icon('right')}</span></button>`
+          : `<div class="tile cut"><span class="eyebrow">Challenges</span><span class="tt">Every challenge cleared</span><span class="ts">Try solving one again with fewer hints, or in a different way.</span></div>`}
+      </div>
+    </section>
+
+    <section class="card s5">
+      <div class="card-head"><h2>Recent activity</h2></div>
+      ${state.activity.length ? `<ul class="acts">${state.activity.slice(0, 5).map(a => `<li class="k-${a.kind}"><span class="ai">${icon(actIcon[a.kind] || 'star')}</span><span>${esc(a.text)}<span class="at">${relTime(a.t)}</span></span></li>`).join('')}</ul>`
+        : `<p class="dim">Your finished lessons and cleared challenges will show up here.</p>`}
+    </section>
+
+    <section class="card s12">
+      <div class="card-head"><h2>Badges</h2><span class="dim">${badges().filter(b => b.got).length} of 8 earned</span></div>
+      <div class="badges">${badges().map(b => `<div class="badge${b.got ? ' got' : ''}"><div class="bs">${icon(b.got ? b.i : 'lock')}</div><div class="bn">${b.n}</div><div class="bd">${b.d}</div></div>`).join('')}</div>
+    </section>
+  </div>`;
+}
+
+function renderLessons(){
+  const ld = doneLessons(), next = LESSONS.find(l => !state.lessons[l.id]);
+  view.innerHTML = `
+  <header class="page-head">
+    <div><div class="eyebrow">Training grounds</div><h1>Lessons</h1><p class="lede">Nine short lessons that cover the core of Python, in order. Each one ends with a quick exercise worth ${XP_LESSON} XP.</p></div>
+    <div class="head-stat"><span class="n">${ld}/${LESSONS.length}</span><span>completed</span></div>
+  </header>
+  <div class="lesson-grid">${LESSONS.map((l, i) => {
+    const done = state.lessons[l.id], up = next && next.id === l.id;
+    return `<button class="lesson-card cut${done ? ' done' : ''}${up ? ' upnext' : ''}" data-lesson="${l.id}">
+      <span class="lnum">${pad(i + 1)}</span>
+      <span class="lbody"><span class="ltitle">${l.title}</span><span class="lsum">${l.summary}</span>
+      <span class="lmeta"><code>${esc(l.topic)}</code>${done ? `<span class="pill ok">${icon('check')} Done</span>` : up ? `<span class="pill next">Up next</span>` : `<span class="pill">+${XP_LESSON} XP</span>`}</span></span>
+    </button>`; }).join('')}</div>`;
+}
+
+function exampleBlock(key){
+  return `<div class="example"><div data-ed="${key}"></div>
+    <div class="row"><button class="btn btn-run sm" data-run="${key}">${icon('play')} Run</button><span class="hint-text">Edit the code and run it again to see what changes.</span></div>
+    <pre class="console" id="out-${key}" hidden></pre></div>`;
+}
+function stuckLabel(key){
+  const c = ctx[key], n = state.hints[c.hk] || 0, len = c.item.hints.length;
+  if (n < len) return `${icon('bulb')} I'm stuck <span style="opacity:.7">(hint ${n + 1} of ${len})</span>`;
+  if (!state.solutions[c.hk]) return `${icon('bulb')} Show solution`;
+  if (closed[key] && closed[key].size) return `${icon('bulb')} Show hints again`;
+  return `${icon('check')} All hints shown`;
+}
+function closeBtn(key, idx, what){
+  return `<button class="hint-x" data-close="${key}" data-idx="${idx}" aria-label="Close ${what}" title="Close">${icon('x')}</button>`;
+}
+function stuckHTML(key){
+  const c = ctx[key], n = state.hints[c.hk] || 0, cl = closed[key] || (closed[key] = new Set());
+  let h = c.item.hints.slice(0, n).map((t, i) => cl.has(String(i)) ? '' : `<div class="hint">${closeBtn(key, i, 'hint ' + (i + 1))}<span class="hint-n">${icon('bulb')} Hint ${i + 1}</span><div>${t}</div></div>`).join('');
+  if (state.solutions[c.hk] && !cl.has('sol')) h += `<div class="hint sol">${closeBtn(key, 'sol', 'solution')}<span class="hint-n">${icon('star')} Solution</span><pre class="code-static">${hl(c.item.solution)}</pre><div><button class="btn btn-ghost sm" data-usesol="${key}">Copy into the editor</button></div><div class="dim">Read it line by line, then try writing it again yourself.</div></div>`;
+  return h;
+}
+function actionRow(key, checkLabel){
+  return `<div class="row">
+    <button class="btn btn-run" data-run="${key}" title="Ctrl + Enter">${icon('play')} Run</button>
+    <button class="btn btn-primary" data-check="${key}">${icon('check')} ${checkLabel}</button>
+    <button class="btn btn-stuck" data-stuck="${key}" id="stuck-btn-${key}">${stuckLabel(key)}</button>
+    <button class="btn btn-ghost" data-coach="${key}" ${sampleFn ? '' : 'hidden'}>${icon('chat')} Ask Code Coach</button>
+  </div>`;
+}
+
+function renderLesson(id){
+  const i = LESSONS.findIndex(l => l.id === id), L = LESSONS[i];
+  if (!L) return go('lessons');
+  const prev = LESSONS[i - 1], next = LESSONS[i + 1];
+  ctx.lx = { kind:'lesson', id, item: L.ex, hk: 'l:' + id };
+  closed.lx = new Set();
+  view.innerHTML = `
+  <div class="crumbs"><button class="link" data-go="lessons">${icon('left')} All lessons</button></div>
+  <header class="lesson-head">
+    <div class="eyebrow">Lesson ${i + 1} of ${LESSONS.length} <code>${esc(L.topic)}</code></div>
+    <h1>${L.title}</h1>
+    <p class="lede">${L.summary}</p>
+  </header>
+  ${L.sections.map((s, k) => `<section class="lesson-sec"><h2>${s.h}</h2><div class="prose">${s.p}</div>${s.code ? exampleBlock('ex' + k) : ''}</section>`).join('')}
+  <section class="exercise cut">
+    <div class="eyebrow">Your turn <span id="lx-status">${state.lessons[id] ? `<span class="pill ok">${icon('check')} Completed</span>` : `<span class="pill next">+${XP_LESSON} XP</span>`}</span></div>
+    <h2>${L.ex.title}</h2>
+    <div class="prose">${L.ex.prompt}</div>
+    ${actionRow('lx', 'Check answer')}
+    <div class="term"><div data-ed="lx"></div><pre class="console" id="out-lx"><span class="dim">Press Run to see what your code prints.</span></pre></div>
+    <div id="result-lx"></div>
+    <div class="stuck-area"><div class="stuck-area" id="stuck-lx">${stuckHTML('lx')}</div><div id="coach-lx"></div></div>
+  </section>
+  <nav class="pager" aria-label="Lesson navigation">
+    ${prev ? `<button class="btn btn-ghost" data-lesson="${prev.id}">${icon('left')} ${prev.title}</button>` : '<span></span>'}
+    ${next ? `<button class="btn btn-ghost" data-lesson="${next.id}">${next.title} ${icon('right')}</button>` : `<button class="btn btn-ghost" data-go="challenges">On to challenges ${icon('right')}</button>`}
+  </nav>`;
+  L.sections.forEach((s, k) => { if (s.code) mount('ex' + k, s.code, { minLines: 1, label: `Example code for ${s.h}` }); });
+  mount('lx', state.drafts['l:' + id] ?? L.ex.starter, { minLines: 4, label: 'Your answer', draft: 'l:' + id });
+}
+
+function renderChallenges(){
+  const cd = doneChallenges();
+  const earned = CHALLENGES.reduce((a, c) => a + (state.challenges[c.id] ? state.challenges[c.id].xp : 0), 0);
+  const list = CHALLENGES.filter(c => chFilter === 'All' || (chFilter === 'Unsolved' ? !state.challenges[c.id] : c.diff === chFilter));
+  view.innerHTML = `
+  <header class="page-head">
+    <div><div class="eyebrow">The arena</div><h1>Challenges</h1><p class="lede">Solve problems your own way. Hints are there when you need them, and each one you use lowers the reward a little.</p></div>
+    <div class="head-stat"><span class="n">${cd}/${CHALLENGES.length}</span><span>cleared, ${earned} XP earned</span></div>
+  </header>
+  <div class="filters" role="group" aria-label="Filter challenges">${['All','Easy','Medium','Hard','Unsolved'].map(f => `<button class="fbtn" data-filter="${f}" aria-pressed="${chFilter === f}">${f}</button>`).join('')}</div>
+  ${list.length ? `<div class="ch-grid">${list.map(c => {
+    const s = state.challenges[c.id];
+    return `<button class="ch-card cut${s ? ' solved' : ''}" data-ch="${c.id}">
+      <span class="row" style="justify-content:space-between"><span class="pill d-${c.diff}">${c.diff}</span>${s ? `<span class="pill ok">${icon('check')} Cleared</span>` : ''}</span>
+      <span class="ct">${c.title}</span><span class="cb">${c.blurb}</span>
+      <span class="cf"><span class="tags">${c.tags.map(t => `<span class="tag">#${esc(t.replace(/\s/g, ''))}</span>`).join('')}</span><span class="xpv">${icon('bolt')} ${s ? s.xp : XP_BY[c.diff]} XP</span></span>
+    </button>`; }).join('')}</div>`
+  : `<div class="card"><h2>Nothing left here</h2><p class="dim">You've cleared every challenge in this group. Pick another filter to keep training.</p></div>`}`;
+}
+
+function rewardNote(ch){
+  const k = 'c:' + ch.id, s = state.challenges[ch.id];
+  if (s) return `Cleared for ${s.xp} XP. Solving it again can raise that to ${rewardFor(ch)} XP if it's higher.`;
+  if (state.solutions[k]) return 'You viewed the solution, so this clear is worth 25%.';
+  const n = state.hints[k] || 0;
+  return n ? `${plural(n, 'hint')} used. Each hint lowers the reward by 20%, down to 40%.` : `Full reward with no hints. Each hint lowers it by 20%, down to 40%.`;
+}
+function renderChallenge(id){
+  const ch = CHALLENGES.find(c => c.id === id);
+  if (!ch) return go('challenges');
+  ctx.cx = { kind:'challenge', id, item: ch, hk: 'c:' + id };
+  closed.cx = new Set();
+  view.innerHTML = `
+  <div class="crumbs"><button class="link" data-go="challenges">${icon('left')} All challenges</button></div>
+  <div class="ch-layout">
+    <div class="ch-brief">
+      <div class="eyebrow"><span class="pill d-${ch.diff}">${ch.diff}</span>${ch.tags.map(t => `<span class="tag">#${esc(t.replace(/\s/g, ''))}</span>`).join('')}</div>
+      <h1>${ch.title}</h1>
+      <div class="prose">${ch.prompt}</div>
+      <div class="reward">${icon('bolt')}<div><strong id="reward-cx">${rewardFor(ch)} XP</strong><small id="reward-note">${rewardNote(ch)}</small></div></div>
+    </div>
+    <div class="ch-work">
+      <div class="work-head"><span class="label">main.py</span><button class="link" data-reset="cx">${icon('reset')} Reset code</button></div>
+      ${actionRow('cx', 'Submit')}
+      <div class="term"><div data-ed="cx"></div><pre class="console" id="out-cx"><span class="dim">Press Run to try your code, or Submit when you think it's right. Output shows here.</span></pre></div>
+      <div id="result-cx"></div>
+      <div class="stuck-area"><div class="stuck-area" id="stuck-cx">${stuckHTML('cx')}</div><div id="coach-cx"></div></div>
+    </div>
+  </div>`;
+  mount('cx', state.drafts['c:' + id] ?? ch.starter, { minLines: 10, label: 'Your solution', draft: 'c:' + id });
+}
+
+function mount(key, code, opts){
+  const host = $(`[data-ed="${key}"]`);
+  let t = null;
+  editors[key] = makeEditor(host, key, code, {
+    ...opts,
+    onRun: () => runOnly(key),
+    onChange: opts.draft ? v => { state.drafts[opts.draft] = v; clearTimeout(t); t = setTimeout(persist, 400); } : null
+  });
+}
+
+/* ---------- actions ---------- */
+function consoleHTML(out, err){
+  let h = out ? esc(out) : '';
+  if (err) {
+    h += (h && !h.endsWith('\n') ? '\n' : '') + `<span class="err">${esc(err.type)}: ${esc(err.msg)}${err.line ? ` (line ${err.line})` : ''}</span>`;
+    if (TIPS[err.type]) h += `<span class="tip"><b>Tip:</b> ${TIPS[err.type]}</span>`;
+  } else if (!out) h = '<span class="dim">Your code ran but printed nothing. Use print() to show output.</span>';
+  return h;
+}
+async function busy(key, fn){
+  const btns = $$(`[data-run="${key}"],[data-check="${key}"]`);
+  btns.forEach(b => b.disabled = true);
+  try { await fn(); } finally { btns.forEach(b => b.disabled = false); }
+}
+async function runOnly(key){
+  const ed = editors[key]; if (!ed) return;
+  const out = $('#out-' + key);
+  await busy(key, async () => {
+    out.hidden = false; out.innerHTML = '<span class="dim">Running...</span>';
+    const r = await runPython(ed.get());
+    out.innerHTML = consoleHTML(r.out, r.ok ? null : r.err);
+  });
+}
+async function doCheck(key){
+  const c = ctx[key], ed = editors[key]; if (!c || !ed) return;
+  const out = $('#out-' + key), res = $('#result-' + key);
+  await busy(key, async () => {
+    out.hidden = false; out.innerHTML = '<span class="dim">Checking...</span>'; res.innerHTML = '';
+    const r = await checkCode(c.item, ed.get());
+    out.innerHTML = r.note && !r.out ? '<span class="dim">No output.</span>' : consoleHTML(r.out, r.err);
+    if (r.pass) {
+      const gained = award(c);
+      const nextBtn = c.kind === 'lesson'
+        ? (() => { const i = LESSONS.findIndex(l => l.id === c.id), n = LESSONS[i + 1]; return n ? `<button class="btn btn-primary sm" data-lesson="${n.id}">Next lesson ${icon('right')}</button>` : `<button class="btn btn-primary sm" data-go="challenges">Go to challenges ${icon('right')}</button>`; })()
+        : (() => { const n = CHALLENGES.find(x => !state.challenges[x.id]); return n ? `<button class="btn btn-primary sm" data-ch="${n.id}">Next challenge ${icon('right')}</button>` : `<button class="btn btn-primary sm" data-go="home">Back to base camp ${icon('right')}</button>`; })();
+      res.innerHTML = `<div class="result win cut"><span class="ri">${icon('check')}</span><div class="rb"><strong>${c.kind === 'lesson' ? 'Lesson complete!' : 'Challenge cleared!'}</strong>
+        <span class="xpg">${gained ? `+${gained} XP` : 'Already earned. Nice work solving it again.'}</span><div class="row">${nextBtn}</div></div></div>`;
+      if (c.kind === 'lesson') $('#lx-status').innerHTML = `<span class="pill ok">${icon('check')} Completed</span>`;
+      else { $('#reward-cx').textContent = rewardFor(c.item) + ' XP'; $('#reward-note').textContent = rewardNote(c.item); }
+    } else {
+      let body = '';
+      if (r.diff) body = `Your output doesn't match yet.<div class="diff"><div><span class="label">Expected</span><pre>${esc(r.diff.exp)}</pre></div><div><span class="label">Your output</span><pre>${esc(r.diff.got) || '(nothing printed)'}</pre></div></div>`;
+      else if (r.note) body = r.note;
+      else body = 'Your code hit an error. The output below shows which line and a tip for fixing it.';
+      res.innerHTML = `<div class="result miss"><span class="ri">${icon('x')}</span><div class="rb"><strong>Not quite yet</strong><div>${body}</div><div class="dim">Stuck? Press the yellow button for a hint.</div></div></div>`;
+    }
+  });
+}
+function award(c){
+  const before = levelInfo(totalXP()).level;
+  let gained = 0;
+  if (c.kind === 'lesson') {
+    if (!state.lessons[c.id]) {
+      state.lessons[c.id] = Date.now(); gained = XP_LESSON;
+      addActivity('lesson', `Finished the lesson "${LESSONS.find(l => l.id === c.id).title}" (+${gained} XP)`);
+    }
+  } else {
+    const ch = c.item, prev = state.challenges[ch.id], r = rewardFor(ch);
+    if (!prev || r > prev.xp) {
+      gained = r - (prev ? prev.xp : 0);
+      state.challenges[ch.id] = { xp: r, hints: state.hints[c.hk] || 0, sol: !!state.solutions[c.hk], at: Date.now() };
+      addActivity('challenge', prev ? `Improved "${ch.title}" (+${gained} XP)` : `Cleared "${ch.title}" (+${gained} XP)`);
+    }
+  }
+  const L = levelInfo(totalXP());
+  if (L.level > before) {
+    addActivity('level', `Reached Level ${L.level}: ${L.rank}`);
+    setTimeout(() => toast(icon('crown'), `Level up! You're now a ${L.rank}`), 900);
+  }
+  if (gained) { persist(); confetti(); toast(icon('bolt'), `+${gained} XP`); }
+  renderChrome();
+  return gained;
+}
+function stuck(key, btn){
+  const c = ctx[key], n = state.hints[c.hk] || 0, len = c.item.hints.length;
+  if (n < len) state.hints[c.hk] = n + 1;
+  else if (!state.solutions[c.hk]) {
+    if (btn.dataset.confirm !== '1') {
+      btn.dataset.confirm = '1';
+      btn.innerHTML = c.kind === 'challenge' && !state.challenges[c.id]
+        ? `${icon('bulb')} Sure? Reward drops to ${Math.round(XP_BY[c.item.diff] * 0.25)} XP`
+        : `${icon('bulb')} Press again to see the answer`;
+      return;
+    }
+    state.solutions[c.hk] = true;
+  } else if (closed[key] && closed[key].size) closed[key].clear();
+  else return;
+  delete btn.dataset.confirm;
+  persist();
+  $('#stuck-' + key).innerHTML = stuckHTML(key);
+  btn.innerHTML = stuckLabel(key);
+  if (c.kind === 'challenge') { $('#reward-cx').textContent = rewardFor(c.item) + ' XP'; $('#reward-note').textContent = rewardNote(c.item); }
+}
+async function coach(key, btn){
+  const c = ctx[key], ed = editors[key], box = $('#coach-' + key);
+  if (!sampleFn || !c || !ed) return;
+  const outEl = $('#out-' + key);
+  const lastOut = outEl && !outEl.hidden ? outEl.textContent.slice(0, 1500) : '(not run yet)';
+  const task = c.item.prompt ? c.item.prompt.replace(/<[^>]+>/g, '') : '';
+  btn.disabled = true;
+  box.innerHTML = `<div class="hint coach">${closeBtn(key, 'coach', 'Code Coach hint')}<span class="hint-n">${icon('chat')} Code Coach</span><div id="coach-text-${key}" class="dim">Reading your code...</div></div>`;
+  const textEl = $('#coach-text-' + key);
+  const prompt = `You are Code Coach inside Code Warrior, an app that teaches Python to complete beginners.
+A student pressed "Ask Code Coach" because they are stuck.
+
+Task they are working on:
+${task}
+
+Their current code:
+${ed.get()}
+
+Latest output or error from running it:
+${lastOut}
+
+Reply with ONE short, encouraging hint (at most 3 sentences, under 70 words) that points them to the next step.
+If there is an error, explain in plain words what it means and where to look.
+Do NOT write the full solution or a complete working program. You may show one tiny code fragment of at most one line.
+Plain text only, no markdown headings or bullet lists.`;
+  try {
+    const r = await sampleFn(prompt, { modelTier: 'quick', cache: false, onText: ({ text }) => { textEl.classList.remove('dim'); textEl.textContent = text; } });
+    textEl.classList.remove('dim'); textEl.textContent = r.text;
+  } catch (e) {
+    if (e && e.code === 'not_granted') { box.innerHTML = ''; $$('[data-coach]').forEach(b => b.hidden = true); sampleFn = null; }
+    else textEl.textContent = e && e.code === 'rate_limited' ? 'Code Coach needs a short break. Try the yellow hint button, or ask again in a minute.' : 'Code Coach couldn\'t answer just now. The yellow hint button still works.';
+  } finally { btn.disabled = false; }
+}
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-go],[data-lesson],[data-ch],[data-filter],[data-run],[data-check],[data-stuck],[data-coach],[data-usesol],[data-reset],[data-close]');
+  if (!t || t.disabled) return;
+  const d = t.dataset;
+  if (d.close) {
+    if (d.idx === 'coach') $('#coach-' + d.close).innerHTML = '';
+    else {
+      (closed[d.close] || (closed[d.close] = new Set())).add(d.idx);
+      $('#stuck-' + d.close).innerHTML = stuckHTML(d.close);
+      $('#stuck-btn-' + d.close).innerHTML = stuckLabel(d.close);
+    }
+  }
+  else if (d.go) go(d.go);
+  else if (d.lesson) go('lesson', d.lesson);
+  else if (d.ch) go('challenge', d.ch);
+  else if (d.filter) { chFilter = d.filter; renderChallenges(); }
+  else if (d.run) runOnly(d.run);
+  else if (d.check) doCheck(d.check);
+  else if (d.stuck) stuck(d.stuck, t);
+  else if (d.coach) coach(d.coach, t);
+  else if (d.usesol) { editors[d.usesol].set(ctx[d.usesol].item.solution); editors[d.usesol].focus(); }
+  else if (d.reset) {
+    if (t.dataset.confirm !== '1') { t.dataset.confirm = '1'; t.innerHTML = `${icon('reset')} Press again to reset`; setTimeout(() => { if (t.isConnected) { delete t.dataset.confirm; t.innerHTML = `${icon('reset')} Reset code`; } }, 3000); return; }
+    delete t.dataset.confirm; t.innerHTML = `${icon('reset')} Reset code`;
+    editors[d.reset].set(ctx[d.reset].item.starter);
+  }
+});
+
+/* ---------- boot ---------- */
+$$('[data-icon]').forEach(el => { el.outerHTML = icon(el.dataset.icon); });
+$('#chip-st-i').outerHTML = icon('flame');
+$('#chip-xp-i').outerHTML = icon('bolt');
+const startHash = (location.hash || '').slice(1);
+if (['home','lessons','challenges'].includes(startHash)) route = { view: startHash };
+checkIn(false);
+render();
+initCloud();
+if (window.claude && window.claude.use) {
+  claude.use('sample').then(s => { sampleFn = s || null; $$('[data-coach]').forEach(b => b.hidden = !sampleFn); }).catch(() => {});
+}
+</script>
+
+</body></html>
