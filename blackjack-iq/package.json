@@ -1,0 +1,30 @@
+{
+  "name": "blackjack-iq",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Blackjack IQ: a premium blackjack table and basic-strategy coach (virtual chips only).",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "lucide-react": "0.577.0",
+    "next": "16.4.3",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "recharts": "2.15.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.1.16",
+    "@types/node": "22.18.0",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.3",
+    "tailwindcss": "4.1.16",
+    "typescript": "5.9.3",
+    "vitest": "4.1.12"
+  }
+}
