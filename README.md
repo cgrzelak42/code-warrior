@@ -26,3 +26,7 @@ When the app runs on its own like this, progress and streaks are saved in the br
 ## Project structure
 
 Everything lives in a single file, `index.html`: styles, lesson and challenge content, the code editor and the app logic. To add a lesson or challenge, add an entry to the `LESSONS` or `CHALLENGES` array in the script.
+
+## Also in this repository: Blackjack IQ
+
+[`blackjack-iq/`](blackjack-iq/) holds a separate Next.js app: a blackjack table and basic-strategy coach that uses virtual chips only. See [`blackjack-iq/README.md`](blackjack-iq/README.md) for how to run it. Code Warrior itself is unchanged and still lives entirely in `index.html`.

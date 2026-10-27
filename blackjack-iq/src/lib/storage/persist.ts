@@ -37,6 +37,8 @@ export const STORAGE_KEYS = {
   settings: "bjiq:settings:v1",
   stats: "bjiq:stats:v1",
   game: "bjiq:game:v1",
+  missed: "bjiq:missed:v1",
+  lastBet: "bjiq:lastBet",
 } as const;
 
 export function loadJSON<T>(store: KeyValueStore, key: string, sanitize: (raw: unknown) => T, fallbackValue: T): T {

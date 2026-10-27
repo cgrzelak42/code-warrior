@@ -1,0 +1,202 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: var(--font-playfair), ui-serif, Georgia, serif;
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+
+  --color-ink: #0b0c0e;
+  --color-charcoal: #111316;
+  --color-panel: #17191d;
+  --color-panel-2: #1f2227;
+  --color-line: #2b2f36;
+  --color-cream: #f4eedf;
+  --color-muted: #a3a7ae;
+  --color-dim: #6f747c;
+  --color-gold: #d4af5a;
+  --color-gold-bright: #ecd08a;
+  --color-gold-deep: #9c7a2e;
+  --color-felt: #0e5b3c;
+  --color-felt-dark: #083a26;
+
+  /* Strategy actions (validated as a categorical set on #15171a; always shown with a letter) */
+  --color-act-hit: #e0605a;
+  --color-act-stand: #2a9fc4;
+  --color-act-double: #b98a1e;
+  --color-act-split: #9a78dc;
+
+  /* Status */
+  --color-good: #4cc38a;
+  --color-bad: #ef6b63;
+  --color-warn: #e8b64c;
+
+  --animate-deal: deal var(--deal-ms, 420ms) cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-rise: rise 320ms ease-out both;
+  --animate-pop: pop 380ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+:root {
+  --deal-ms: 420ms;
+  color-scheme: dark;
+}
+[data-anim="fast"] {
+  --deal-ms: 200ms;
+}
+[data-anim="off"] *,
+[data-anim="off"] *::before,
+[data-anim="off"] *::after {
+  animation-duration: 1ms !important;
+  animation-delay: 0ms !important;
+  transition-duration: 1ms !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+html,
+body {
+  background: var(--color-ink);
+  color: var(--color-cream);
+}
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(212, 175, 90, 0.07), transparent 60%),
+    var(--color-ink);
+  min-height: 100dvh;
+}
+
+::selection {
+  background: rgba(212, 175, 90, 0.35);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-gold-bright);
+  outline-offset: 2px;
+}
+
+@keyframes deal {
+  from {
+    opacity: 0;
+    transform: translate(var(--from-x, 260px), var(--from-y, -220px)) rotate(-18deg) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0) scale(1);
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes chip-in {
+  from {
+    opacity: 0;
+    transform: translateY(60px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Felt: layered gradients + fine noise for texture */
+.felt {
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 35%, #157551 0%, var(--color-felt) 45%, var(--color-felt-dark) 100%);
+  position: relative;
+  isolation: isolate;
+}
+.felt::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.22;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  border-radius: inherit;
+  pointer-events: none;
+}
+.felt-rail {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 0 80px rgba(0, 0, 0, 0.55),
+    0 0 0 10px #2a1a10,
+    0 0 0 11px rgba(212, 175, 90, 0.45),
+    0 30px 80px rgba(0, 0, 0, 0.6);
+}
+
+/* Card flip */
+.card-3d {
+  perspective: 900px;
+}
+.card-inner {
+  transform-style: preserve-3d;
+  transition: transform calc(var(--deal-ms) * 1.2) cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+.card-inner[data-flipped="true"] {
+  transform: rotateY(180deg);
+}
+.card-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.card-back-face {
+  transform: rotateY(180deg);
+}
+.card-back-pattern {
+  background:
+    repeating-linear-gradient(45deg, rgba(212, 175, 90, 0.22) 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(-45deg, rgba(212, 175, 90, 0.22) 0 2px, transparent 2px 9px),
+    linear-gradient(160deg, #6b1620, #3c0b12);
+}
+
+.gold-text {
+  background: linear-gradient(180deg, var(--color-gold-bright), var(--color-gold) 55%, var(--color-gold-deep));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.btn-gold {
+  background: linear-gradient(180deg, #e8c977, #c69a3f 60%, #a47c2a);
+  color: #1d1406;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 6px 16px rgba(212, 175, 90, 0.25);
+}
+.btn-gold:hover:not(:disabled) {
+  filter: brightness(1.07);
+}
+
+.chip-anim {
+  animation: chip-in var(--deal-ms) cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #33373e transparent;
+}

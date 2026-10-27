@@ -5,7 +5,7 @@ import type { Action, RoundResult } from "../engine/game";
 import type { HandCategory } from "../strategy/coach";
 
 export type DecisionCategory = HandCategory | "insurance";
-export type DecisionChoice = Action | "insurance" | "no-insurance";
+export type DecisionChoice = Action | "insurance" | "no-insurance" | "timeout";
 export type DecisionSource = "play" | "train";
 
 export interface DecisionInput {
@@ -218,6 +218,15 @@ export function accuracyTrend(s: Stats, block = 20): { label: string; accuracy: 
   const out: { label: string; accuracy: number; decisions: number }[] = [];
   const h = s.decisionHistory;
   for (let i = 0; i < h.length; i += block) {
+    // Fold a short trailing chunk into the previous block so one decision can't swing the line.
+    if (out.length > 0 && h.length - i < block / 2) {
+      const last = out.pop() as { label: string; accuracy: number; decisions: number };
+      i -= last.decisions;
+      const chunk = h.slice(i);
+      const correct = chunk.filter((d) => d.correct).length;
+      out.push({ label: `${i + 1}–${h.length}`, accuracy: Math.round((correct / chunk.length) * 100), decisions: chunk.length });
+      break;
+    }
     const chunk = h.slice(i, i + block);
     const correct = chunk.filter((d) => d.correct).length;
     out.push({ label: `${i + 1}–${i + chunk.length}`, accuracy: Math.round((correct / chunk.length) * 100), decisions: chunk.length });

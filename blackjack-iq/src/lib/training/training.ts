@@ -125,3 +125,33 @@ export function scoreFor(answer: TrainingAnswer, difficulty: Difficulty, timerSe
   const remaining = Math.max(0, 1 - answer.timeMs / (timerSeconds * 1000));
   return base + Math.round(base * remaining);
 }
+
+/** Rebuilds a scenario from stored cards (used to re-drill missed decisions). */
+export function scenarioFromCards(cards: Card[], dealerUp: Card, rules: Rules): Scenario {
+  const ctx = firstTwoCardContext(rules, cards);
+  const recommendation = recommend(cards, dealerUp.rank, rules, ctx);
+  return { id: `s${seq++}`, cards, dealerUp, category: recommendation.category, ctx, recommendation };
+}
+
+export interface MissedDecision {
+  id: string;
+  cards: Card[];
+  dealerUp: Card;
+  position: string;
+  chosen: Action | null;
+  recommended: Action;
+  explanation: string;
+  t: number;
+}
+
+export const MAX_MISSED = 50;
+
+export function sanitizeMissed(raw: unknown): MissedDecision[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter(
+      (m): m is MissedDecision =>
+        !!m && typeof m === "object" && Array.isArray((m as MissedDecision).cards) && !!(m as MissedDecision).dealerUp && typeof (m as MissedDecision).position === "string",
+    )
+    .slice(0, MAX_MISSED);
+}
