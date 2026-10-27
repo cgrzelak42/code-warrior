@@ -24,7 +24,10 @@ npm run dev        # http://localhost:3000
 npm test           # engine, strategy, stats and persistence tests (Vitest)
 npm run lint       # strict TypeScript check
 npm run build && npm start   # production build
+npm run build:standalone     # one self-contained file: dist/blackjack-iq.html
 ```
+
+The standalone build bundles the whole app (React, charts, styles) into a single HTML file. You can double-click it to play offline, put it on any static host, or publish it as one page. It uses a hash router instead of Next's file routes: `#play`, `#train`, `#chart`, `#stats` and `#rules` (Settings).
 
 ## Architecture
 

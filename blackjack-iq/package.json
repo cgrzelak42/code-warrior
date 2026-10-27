@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "build:standalone": "node scripts/build-standalone.mjs"
   },
   "dependencies": {
     "lucide-react": "0.577.0",
@@ -23,6 +24,8 @@
     "@types/node": "22.18.0",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.3",
+    "esbuild": "^0.28.2",
+    "postcss": "^8.5.32",
     "tailwindcss": "4.1.16",
     "typescript": "5.9.3",
     "vitest": "4.1.12"
