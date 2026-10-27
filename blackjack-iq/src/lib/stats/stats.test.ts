@@ -58,8 +58,8 @@ describe("statistics", () => {
     store.setItem(STORAGE_KEYS.stats, "{not json");
     expect(loadJSON(store, STORAGE_KEYS.stats, sanitizeStats, emptyStats()).rounds).toBe(0);
     expect(sanitizeStats({ version: 99 }).rounds).toBe(0);
-    expect(sanitizeSettings({ rules: { decks: 3, blackjackPayout: "6:5" }, coach: "bogus" })).toMatchObject({
-      coach: DEFAULT_SETTINGS.coach,
+    expect(sanitizeSettings({ rules: { decks: 3, blackjackPayout: "6:5" }, coachReview: "bogus" })).toMatchObject({
+      coachReview: DEFAULT_SETTINGS.coachReview,
       rules: { decks: DEFAULT_RULES.decks, blackjackPayout: "6:5" },
     });
   });

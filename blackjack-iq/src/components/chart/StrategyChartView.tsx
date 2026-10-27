@@ -229,7 +229,7 @@ export function StrategyChartView() {
                     </tbody>
                   </table>
                   <p className="mt-2 text-xs text-dim">
-                    Average result per hand from an infinite-deck model, assuming the dealer has already checked for blackjack. Even the best play can have a negative value: it is the play that loses least.
+                    Average result per hand, calculated from a fresh {rules.decks}-deck shoe with your cards and the dealer's upcard removed, after the dealer has checked for blackjack. Even the best play can have a negative value: it is the play that loses least. At the table, the coach's review uses the cards actually left in the shoe.
                   </p>
                 </div>
               </div>

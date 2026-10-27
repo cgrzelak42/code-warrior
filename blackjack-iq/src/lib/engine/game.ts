@@ -428,6 +428,11 @@ function settle(s: GameState): GameState {
   return s;
 }
 
+/** Cards the player hasn't seen: the rest of the shoe plus the dealer's hole card while it is face down. */
+export function unseenCards(s: GameState): Card[] {
+  return s.holeRevealed ? s.shoe : [...s.shoe, ...s.dealer.slice(1, 2)];
+}
+
 /** Cards the player can currently see (hides the dealer hole card until it is revealed). */
 export function visibleDealerCards(s: GameState): Card[] {
   return s.holeRevealed ? s.dealer : s.dealer.slice(0, 1);

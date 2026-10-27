@@ -2,19 +2,23 @@
 
 // App-wide state: settings, the table, statistics, sound. Engine calls happen in event handlers
 // (never inside state updaters) so each round and decision is recorded exactly once.
+// The coach grades each decision as it is made, but the review is only shown once the round
+// is over, so it never tells the player what to do mid-hand.
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { STARTING_BANKROLL } from "@/lib/engine/bankroll";
-import { type Action, type GameState, act, changeRules, createGame, deal, legalActions, resolveInsurance, setBankroll } from "@/lib/engine/game";
+import { type Action, type GameState, act, changeRules, createGame, deal, legalActions, resolveInsurance, setBankroll, unseenCards } from "@/lib/engine/game";
 import type { Rules } from "@/lib/engine/rules";
+import type { Card } from "@/lib/engine/cards";
 import { type Recommendation, insuranceAdvice, recommend } from "@/lib/strategy/coach";
+import { type ShoeCounts, countsFromCards } from "@/lib/strategy/ev";
 import { type DecisionInput, type Stats, emptyStats, recordDecision, recordRound, sanitizeStats } from "@/lib/stats/stats";
 import { restoreGame } from "@/lib/storage/gameState";
 import { STORAGE_KEYS, browserStore, loadJSON, saveJSON } from "@/lib/storage/persist";
 import { DEFAULT_SETTINGS, type Settings, sanitizeSettings } from "@/lib/settings";
 import { type SoundName, playSound } from "@/lib/sound";
 
-export interface DecisionFeedback {
+export interface ReviewItem {
   id: number;
   kind: "action" | "insurance";
   chosen: Action | "insurance" | "no-insurance";
@@ -23,6 +27,16 @@ export interface DecisionFeedback {
   position: string;
   explanation: string;
   rec: Recommendation | null;
+  /** Your cards and the dealer upcard at the moment of the decision. */
+  cards: Card[];
+  dealerUp: Card | null;
+  /** 1-based hand number when the round had split hands. */
+  handNumber: number;
+}
+
+export interface RoundReview {
+  round: number;
+  items: ReviewItem[];
 }
 
 interface AppContextValue {
@@ -38,8 +52,8 @@ interface AppContextValue {
   decideInsurance: (take: boolean) => void;
   resetBankroll: () => void;
   lastBet: number;
-  feedback: DecisionFeedback | null;
-  clearFeedback: () => void;
+  /** Decisions of the current/last round. Show only once the round is settled. */
+  review: RoundReview;
   stats: Stats;
   logDecision: (d: DecisionInput) => void;
   resetStats: () => void;
@@ -57,6 +71,11 @@ export function useApp(): AppContextValue {
   return ctx;
 }
 
+/** The cards the player hasn't seen: everything left in the shoe plus the dealer's hole card. */
+export function unseenShoe(game: GameState): ShoeCounts {
+  return countsFromCards(unseenCards(game));
+}
+
 /** Recommendation for the active hand right now, or null if no decision is pending. */
 export function currentRecommendation(game: GameState): Recommendation | null {
   if (game.phase !== "player") return null;
@@ -69,7 +88,12 @@ export function currentRecommendation(game: GameState): Recommendation | null {
     canHit: legal.includes("hit"),
     canDouble: legal.includes("double"),
     canSplit: legal.includes("split"),
-  });
+  }, unseenShoe(game));
+}
+
+function sanitizeReview(raw: unknown): RoundReview {
+  const o = (raw ?? {}) as Partial<RoundReview>;
+  return typeof o.round === "number" && Array.isArray(o.items) ? { round: o.round, items: o.items } : { round: -1, items: [] };
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -77,11 +101,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [game, setGame] = useState<GameState>(() => createGame(DEFAULT_SETTINGS.rules, STARTING_BANKROLL, () => 0.5));
   const [stats, setStats] = useState<Stats>(() => emptyStats(0));
-  const [feedback, setFeedback] = useState<DecisionFeedback | null>(null);
+  const [review, setReview] = useState<RoundReview>({ round: -1, items: [] });
   const [lastBet, setLastBet] = useState(25);
   const [bankrollHold, setBankrollHold] = useState<number | null>(null);
   const roundDecisions = useRef<boolean[]>([]);
-  const feedbackId = useRef(0);
+  const reviewId = useRef(0);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
@@ -96,6 +120,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setGame(g);
     const lb = Number(store.getItem(STORAGE_KEYS.lastBet));
     if (Number.isFinite(lb) && lb > 0) setLastBet(lb);
+    const rv = loadJSON(store, STORAGE_KEYS.review, sanitizeReview, { round: -1, items: [] });
+    if (rv.round === g.roundNumber) {
+      setReview(rv);
+      roundDecisions.current = rv.items.map((i) => i.correct);
+    }
     setHydrated(true);
   }, []);
 
@@ -108,6 +137,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (hydrated) saveJSON(browserStore(), STORAGE_KEYS.game, game);
   }, [game, hydrated]);
+  useEffect(() => {
+    if (hydrated) saveJSON(browserStore(), STORAGE_KEYS.review, review);
+  }, [review, hydrated]);
   useEffect(() => {
     document.documentElement.dataset.anim = settings.animation;
   }, [settings.animation]);
@@ -139,7 +171,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const next = deal(g, amount);
         setGame(next);
         setLastBet(amount);
-        setFeedback(null);
+        setReview({ round: next.roundNumber, items: [] });
         try {
           browserStore().setItem(STORAGE_KEYS.lastBet, String(amount));
         } catch {
@@ -170,9 +202,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setStats((prev) =>
           recordDecision(prev, { source: "play", category: rec.category, position: rec.position, chosen: action, recommended: rec.action }),
         );
-        feedbackId.current += 1;
-        setFeedback({
-          id: feedbackId.current,
+        reviewId.current += 1;
+        const item: ReviewItem = {
+          id: reviewId.current,
           kind: "action",
           chosen: action,
           recommended: rec.action,
@@ -180,7 +212,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
           position: rec.position,
           explanation: rec.explanation,
           rec,
-        });
+          cards: game.hands[game.activeHand]?.cards.slice() ?? [],
+          dealerUp: game.dealer[0] ?? null,
+          handNumber: game.hands.length > 1 || action === "split" ? game.activeHand + 1 : 0,
+        };
+        setReview((r) => ({ round: game.roundNumber, items: r.round === game.roundNumber ? [...r.items, item] : [item] }));
       }
       sound(action === "split" || action === "double" ? "chip" : action === "stand" ? "flip" : "card");
       setGame(next);
@@ -198,16 +234,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
       const playerBJ = game.hands[0]?.status === "blackjack";
-      const advice = insuranceAdvice(playerBJ);
+      const advice = insuranceAdvice(playerBJ, unseenShoe(game));
       const correct = !take;
       roundDecisions.current.push(correct);
       const position = playerBJ ? "Even money (blackjack vs A)" : "Insurance vs A";
       setStats((prev) =>
         recordDecision(prev, { source: "play", category: "insurance", position, chosen: take ? "insurance" : "no-insurance", recommended: "no-insurance" }),
       );
-      feedbackId.current += 1;
-      setFeedback({
-        id: feedbackId.current,
+      reviewId.current += 1;
+      const item: ReviewItem = {
+        id: reviewId.current,
         kind: "insurance",
         chosen: take ? "insurance" : "no-insurance",
         recommended: "no-insurance",
@@ -215,7 +251,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         position,
         explanation: advice.explanation,
         rec: null,
-      });
+        cards: game.hands[0]?.cards.slice() ?? [],
+        dealerUp: game.dealer[0] ?? null,
+        handNumber: 0,
+      };
+      setReview((r) => ({ round: game.roundNumber, items: r.round === game.roundNumber ? [...r.items, item] : [item] }));
       if (take) sound("chip");
       setGame(next);
       settleIfDone(next);
@@ -251,7 +291,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [settings.rules, hydrated]);
 
   const resetStats = useCallback(() => setStats(emptyStats()), []);
-  const clearFeedback = useCallback(() => setFeedback(null), []);
 
   const pendingRulesDiffer = JSON.stringify(game.rules) !== JSON.stringify(settings.rules);
 
@@ -268,8 +307,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       decideInsurance,
       resetBankroll,
       lastBet,
-      feedback,
-      clearFeedback,
+      review,
       stats,
       logDecision,
       resetStats,
@@ -277,7 +315,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       displayBankroll: bankrollHold ?? game.bankroll,
       setBankrollHold,
     }),
-    [bankrollHold, hydrated, settings, updateSettings, updateRules, game, pendingRulesDiffer, placeBet, playAction, decideInsurance, resetBankroll, lastBet, feedback, clearFeedback, stats, logDecision, resetStats, sound],
+    [bankrollHold, hydrated, settings, updateSettings, updateRules, game, pendingRulesDiffer, placeBet, playAction, decideInsurance, resetBankroll, lastBet, review, stats, logDecision, resetStats, sound],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

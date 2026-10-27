@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createDeck, createShoe, handValue, isBlackjack, isPair, shuffle } from "./cards";
-import { act, changeRules, createGame, createRiggedGame, deal, GameError, legalActions, resolveInsurance, type GameState } from "./game";
+import { act, changeRules, createGame, createRiggedGame, deal, GameError, legalActions, resolveInsurance, type GameState, unseenCards } from "./game";
 import { DEFAULT_RULES, type Rules } from "./rules";
 import { cards } from "./testUtils";
 
@@ -336,5 +336,14 @@ describe("shoe management", () => {
       net += g.result!.net;
     }
     expect(Math.round(g.bankroll * 100)).toBe(Math.round((100000 + net) * 100));
+  });
+});
+
+describe("unseen cards", () => {
+  it("include the dealer's hole card until it is revealed", () => {
+    let g = deal(rig(rules(), ["10", "9", "6", "8", "5", "2"]), 10);
+    expect(unseenCards(g).map((c) => c.rank)).toEqual(["5", "2", "8"]);
+    g = act(g, "stand");
+    expect(unseenCards(g).map((c) => c.rank)).toEqual(["5", "2"]);
   });
 });

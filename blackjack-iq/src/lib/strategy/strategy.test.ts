@@ -4,7 +4,7 @@ import { UPCARDS } from "../engine/cards";
 import { DEFAULT_RULES, type Rules } from "../engine/rules";
 import { baseChart, chartForRules } from "./chart";
 import { explainCell, firstTwoCardContext, insuranceAdvice, recommend } from "./coach";
-import { actionEVs, dealerOutcome } from "./ev";
+import { actionEVs, dealerOutcome, fullShoeCounts, withoutCards } from "./ev";
 
 const R = (over: Partial<Rules> = {}): Rules => ({ ...DEFAULT_RULES, ...over });
 const hand = (...ranks: Rank[]) => ranks.map((rank) => ({ rank }));
@@ -193,5 +193,52 @@ describe("EV model and strength", () => {
         const text = rec(R(), cards, u).explanation.toLowerCase();
         expect(text).not.toMatch(/guarantee|always win|sure win/);
       }
+  });
+});
+
+describe("odds from the real shoe", () => {
+  const r = R({ decks: 6, dealerHitsSoft17: false });
+
+  it("a fresh 6-deck shoe gives nearly the same odds as an endless deck", () => {
+    expect(dealerOutcome(6, false, fullShoeCounts(6)).bust).toBeCloseTo(dealerOutcome(6, false).bust, 2);
+  });
+
+  it("a ten-rich shoe makes the dealer's 6 bust more often", () => {
+    const tenRich = fullShoeCounts(1);
+    for (const v of [2, 3, 4, 5, 6]) tenRich[v] = 0;
+    expect(dealerOutcome(6, false, tenRich).bust).toBeGreaterThan(dealerOutcome(6, false, fullShoeCounts(1)).bust + 0.05);
+  });
+
+  it("uses the live shoe when one is given and a fresh shoe otherwise", () => {
+    const cards = hand("10", "6");
+    const ctx = firstTwoCardContext(r, cards);
+    const fresh = recommend(cards, "10", r, ctx);
+    expect(fresh.oddsFrom).toBe("fresh-shoe");
+    expect(fresh.shoeSize).toBe(312 - 3);
+    const live = recommend(cards, "10", r, ctx, withoutCards(fullShoeCounts(6), [{ rank: "5" }, { rank: "4" }]));
+    expect(live.oddsFrom).toBe("shoe");
+    expect(live.shoeSize).toBe(310);
+    // The recommendation itself is always basic strategy.
+    expect(live.action).toBe(fresh.action);
+  });
+
+  it("notes when the shoe favours a different play than basic strategy", () => {
+    // Basic strategy hits 16 vs 10. Once the 2s to 5s are gone, a hit almost always busts and
+    // standing comes out ahead; the coach points that out but still grades against basic strategy.
+    const tenRich = fullShoeCounts(1);
+    for (const v of [2, 3, 4, 5]) tenRich[v] = 0;
+    const rec16 = recommend(hand("10", "6"), "10", r, { canHit: true, canDouble: false, canSplit: false }, tenRich);
+    expect(rec16.action).toBe("hit");
+    expect(rec16.strength).toBe("close");
+    expect(rec16.notes.join(" ")).toMatch(/Stand comes out/);
+  });
+
+  it("insurance advice quotes the live share of tens and still declines", () => {
+    const tenRich = fullShoeCounts(1);
+    for (const v of [2, 3, 4, 5]) tenRich[v] = 0;
+    const rich = insuranceAdvice(false, tenRich);
+    expect(rich.take).toBe(false);
+    expect(rich.explanation).toMatch(/would actually be a good bet/);
+    expect(insuranceAdvice(false, fullShoeCounts(6)).explanation).toMatch(/loses money/);
   });
 });

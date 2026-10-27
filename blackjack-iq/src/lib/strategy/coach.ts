@@ -5,7 +5,7 @@ import { type Card, type Rank, type UpcardValue, cardPoints, handValue, isPair, 
 import type { Action } from "../engine/game";
 import { type Rules, canDoubleTotal } from "../engine/rules";
 import { type PairRank, type StrategyCode, CODE_LABEL, chartForRules, deckClass } from "./chart";
-import { type ActionEVs, actionEVs, dealerOutcome } from "./ev";
+import { type ActionEVs, type ShoeCounts, actionEVs, dealerOutcome, fullShoeCounts, tenShare, withoutCards } from "./ev";
 
 export type HandCategory = "hard" | "soft" | "pair";
 
@@ -36,6 +36,10 @@ export interface Recommendation {
   explanation: string;
   dealerNote: string;
   dealerBust: number;
+  /** Where the odds came from: the live shoe at the table, or a fresh shoe for these rules. */
+  oddsFrom: "shoe" | "fresh-shoe";
+  /** Cards the odds were based on. */
+  shoeSize: number;
   notes: string[];
 }
 
@@ -176,17 +180,26 @@ function explain(
     : `Hit hard ${total}.`;
 }
 
+/** A fresh shoe for these rules with the known cards (player hand, dealer upcard) removed. */
+export function freshShoeFor(rules: Pick<Rules, "decks">, known: readonly Pick<Card, "rank">[]): ShoeCounts {
+  return withoutCards(fullShoeCounts(rules.decks), known);
+}
+
 /**
  * Basic-strategy recommendation for a hand. `ctx` lists the actions that are legal right now,
- * so the advice is always something the player can actually do.
+ * so the advice is always something the player can actually do. `shoe` is the composition of
+ * the cards the player hasn't seen (undealt cards plus the dealer's hole card); without it the
+ * odds use a fresh shoe for the rules.
  */
 export function recommend(
   cards: readonly Pick<Card, "rank">[],
   dealerUp: Rank,
   rules: Rules,
   ctx: LegalContext,
+  shoe?: ShoeCounts,
 ): Recommendation {
   const v = handValue(cards);
+  const oddsShoe = shoe ?? freshShoeFor(rules, [...cards, { rank: dealerUp }]);
   const up = upcardValue(dealerUp);
   const chart = chartForRules(rules);
   const pair = isPair(cards) && ctx.canSplit;
@@ -218,7 +231,7 @@ export function recommend(
     hardSum += cardPoints(c.rank);
     if (c.rank === "A") hasAce = true;
   }
-  const evs: ActionEVs = actionEVs(hardSum, hasAce, up, rules, pair ? pairRow((cards[0] as Pick<Card, "rank">).rank) : null);
+  const evs: ActionEVs = actionEVs(hardSum, hasAce, up, rules, pair ? pairRow((cards[0] as Pick<Card, "rank">).rank) : null, oddsShoe);
   const ev: Partial<Record<Action, number>> = { stand: evs.stand };
   if (ctx.canHit) ev.hit = evs.hit;
   if (ctx.canDouble) ev.double = evs.double;
@@ -233,15 +246,21 @@ export function recommend(
   else strength = "close";
   const strengthScore = edge === null ? 100 : Math.round(Math.max(8, Math.min(100, 30 + (edge / 0.25) * 70)));
 
-  const dealer = dealerOutcome(up, rules.dealerHitsSoft17);
+  const dealer = dealerOutcome(up, rules.dealerHitsSoft17, oddsShoe);
   const notes: string[] = [];
   const dc = deckClass(rules.decks);
   if (dc !== "multi")
     notes.push(
       `${dc === "single" ? "Single" : "Double"}-deck chart is total-dependent; rare composition-dependent exceptions are not modeled.`,
     );
-  if (edge !== null && edge < 0)
-    notes.push("Near-even decision: the simplified EV model rates the alternatives about equal. The published chart play is shown.");
+  if (edge !== null && edge < 0) {
+    const better = (Object.keys(ev) as Action[]).reduce((a, b) => ((ev[b] as number) > (ev[a] as number) ? b : a));
+    notes.push(
+      shoe
+        ? `With the cards left in this shoe, ${ACTION_LABEL[better]} comes out about ${(-edge * 100).toFixed(1)}% of your bet better. Basic strategy plays the same way whatever has been dealt; changing your play to fit the shoe is what card counters do.`
+        : "Near-even decision: the odds model rates the alternatives about equal. The published chart play is shown.",
+    );
+  }
   if (category === "pair" && action === "split" && rules.maxSplitHands > 2)
     notes.push("Split EV estimate assumes no resplits, so it slightly understates the value of splitting.");
 
@@ -261,6 +280,8 @@ export function recommend(
     explanation: explain(category, v.total, pairValue, up, action, code, dealer.bust, rules),
     dealerNote: dealerNoteFor(up, dealer.bust),
     dealerBust: dealer.bust,
+    oddsFrom: shoe ? "shoe" : "fresh-shoe",
+    shoeSize: oddsShoe.reduce((a, b) => a + b, 0),
     notes,
   };
 }
@@ -288,13 +309,21 @@ export interface InsuranceAdvice {
   explanation: string;
 }
 
-export function insuranceAdvice(playerHasBlackjack: boolean): InsuranceAdvice {
-  return {
-    take: false,
-    explanation: playerHasBlackjack
-      ? "Decline even money. Insurance pays 2:1, but fewer than one card in three is a ten, so the side bet loses money over time, even when you hold blackjack."
-      : "Decline insurance. It is a side bet that pays 2:1 on the dealer having a ten underneath, but only about 31% of cards are tens (it would need to be over 33% to break even).",
-  };
+/**
+ * Basic strategy never takes insurance. With a live shoe the advice quotes the real share of
+ * tens left (the hole card is one of the unseen cards) and flags when it tips past one in three.
+ */
+export function insuranceAdvice(playerHasBlackjack: boolean, shoe?: ShoeCounts): InsuranceAdvice {
+  const share = tenShare(shoe);
+  const pct = Math.round(share * 100);
+  const what = playerHasBlackjack ? "Decline even money." : "Decline insurance.";
+  const base = `${what} Insurance is a side bet that pays 2:1 if the dealer has a ten underneath, so it only pays off when more than one card in three is a ten.`;
+  const live = shoe
+    ? share > 1 / 3
+      ? ` Right now ${pct}% of the unseen cards are tens, so in this shoe insurance would actually be a good bet. Basic strategy still declines it; only players tracking the cards take advantage of moments like this.`
+      : ` Right now ${pct}% of the unseen cards are tens, so it loses money.`
+    : ` In a full shoe about 31% of cards are tens, so it loses money over time${playerHasBlackjack ? ", even when you hold blackjack" : ""}.`;
+  return { take: false, explanation: base + live };
 }
 
 export const DISCLAIMER =

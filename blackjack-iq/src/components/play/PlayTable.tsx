@@ -7,7 +7,7 @@ import { CHIP_VALUES, type ChipValue, canAfford, formatChips, money } from "@/li
 import { type Action, illegalReason, insuranceCost, legalActions } from "@/lib/engine/game";
 import { feltSummary } from "@/lib/engine/rules";
 import { Chip } from "../Chip";
-import { currentRecommendation, useApp } from "../AppProvider";
+import { useApp } from "../AppProvider";
 import { CoachPanel } from "./CoachPanel";
 import { DealerArea, PlayerArea } from "./Table";
 
@@ -88,7 +88,6 @@ export function PlayTable() {
     sound(result.playerBlackjack ? "blackjack" : result.net > 0 ? "win" : result.net < 0 ? "lose" : "push");
   }, [result, revealing, sound]);
 
-  const rec = useMemo(() => currentRecommendation(game), [game]);
   const legal = useMemo(() => legalActions(game), [game]);
   const canBet = game.phase === "betting" || game.phase === "settled";
   const broke = canBet && game.bankroll < game.rules.minBet;
@@ -229,7 +228,6 @@ export function PlayTable() {
                 const m = ACTION_META[a];
                 const enabled = legal.includes(a);
                 const Icon = m.icon;
-                const isRec = settings.coach === "always" && rec?.action === a;
                 return (
                   <button
                     key={a}
@@ -238,7 +236,7 @@ export function PlayTable() {
                     title={enabled ? `${m.label} (${m.key})` : (illegalReason(game, a) ?? undefined)}
                     onClick={() => app.playAction(a)}
                     className={`group relative flex items-center justify-center gap-2 rounded-xl border px-4 py-3.5 text-base font-bold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30 ${
-                      isRec ? "border-gold/80 ring-1 ring-gold/50" : "border-line"
+                      "border-line"
                     }`}
                     style={{ background: enabled ? `color-mix(in oklab, ${m.color} 26%, #17191d)` : "#17191d" }}
                     data-testid={`action-${a}`}
@@ -246,7 +244,6 @@ export function PlayTable() {
                     <Icon className="h-4 w-4" style={{ color: m.color }} />
                     <span className="text-cream">{m.label}</span>
                     <kbd className="hidden text-xs font-semibold text-dim sm:inline">{m.key}</kbd>
-                    {isRec && <span className="absolute -top-2 right-2 rounded-full bg-gold px-1.5 text-[10px] font-extrabold uppercase text-ink">Coach</span>}
                   </button>
                 );
               })}
@@ -340,7 +337,7 @@ export function PlayTable() {
       </div>
 
       <aside className="min-w-0">
-        <CoachPanel game={game} rec={rec} />
+        <CoachPanel game={game} revealing={revealing} />
       </aside>
     </div>
   );

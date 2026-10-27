@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Brain, Gauge, RotateCcw, Scale, Volume2 } from "lucide-react";
 import { STARTING_BANKROLL, formatChips } from "@/lib/engine/bankroll";
 import { DECK_OPTIONS, DEFAULT_RULES, type DeckCount, PAYOUT_OPTIONS, type BlackjackPayout, type DoubleRestriction, describeRules } from "@/lib/engine/rules";
-import type { AnimationSpeed, CoachMode } from "@/lib/settings";
+import type { AnimationSpeed } from "@/lib/settings";
 import { useApp } from "../AppProvider";
 import { PageHeader, Panel, Segmented, Toggle } from "../ui";
 
@@ -122,19 +122,12 @@ export function SettingsView() {
           </Panel>
 
           <Panel title="Coaching" icon={<Brain className="h-4 w-4" />}>
-            <Row label="Strategy coach before decisions" description="Show the recommended play, its strength and the reasoning.">
-              <Segmented<CoachMode>
-                label="Coach mode"
-                value={settings.coach}
-                options={[
-                  { value: "always", label: "Always" },
-                  { value: "on-demand", label: "On request" },
-                  { value: "off", label: "Off" },
-                ]}
-                onChange={(v) => updateSettings({ coach: v })}
-              />
-            </Row>
-            <Toggle checked={settings.feedback} onChange={(v) => updateSettings({ feedback: v })} label="Feedback after each decision" description="Compare your play with basic strategy after you act." />
+            <Toggle
+              checked={settings.coachReview}
+              onChange={(v) => updateSettings({ coachReview: v })}
+              label="Review my decisions after each hand"
+              description="The coach never suggests a play while you're playing. When the round ends, it shows how each decision compared with basic strategy, with the odds from the cards left in the shoe."
+            />
           </Panel>
 
           <Panel title="Sound & motion" icon={<Volume2 className="h-4 w-4" />}>
@@ -206,7 +199,7 @@ export function SettingsView() {
           </Panel>
           <Panel title="About the coach">
             <p className="text-sm leading-relaxed text-muted">
-              Recommendations come from published basic-strategy charts for single-deck, double-deck and 4–8 deck games, adjusted for H17/S17, double-after-split and doubling restrictions. Recommendation strength comes from an infinite-deck expected-value model. Not modeled: surrender (not offered at this table), card counting and composition-dependent plays.
+              Recommendations come from published basic-strategy charts for single-deck, double-deck and 4–8 deck games, adjusted for H17/S17, double-after-split and doubling restrictions. Recommendation strength, dealer bust odds and the value of each play are calculated from the cards actually left in the shoe at that moment. Not modeled: surrender (not offered at this table), card counting and composition-dependent plays.
             </p>
           </Panel>
         </aside>
