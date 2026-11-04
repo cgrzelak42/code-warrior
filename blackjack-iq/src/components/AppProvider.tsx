@@ -8,7 +8,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { STARTING_BANKROLL } from "@/lib/engine/bankroll";
 import { type Action, type GameState, act, changeRules, createGame, deal, legalActions, resolveInsurance, setBankroll, unseenCards } from "@/lib/engine/game";
-import type { Rules } from "@/lib/engine/rules";
+import { type Rules, sanitizeRules } from "@/lib/engine/rules";
+import { type EdgeChange, type EdgeRules, edgeChange, edgeRulesOf, houseEdge } from "@/lib/strategy/houseEdge";
 import type { Card } from "@/lib/engine/cards";
 import { type Recommendation, insuranceAdvice, recommend } from "@/lib/strategy/coach";
 import { type ShoeCounts, countsFromCards } from "@/lib/strategy/ev";
@@ -81,6 +82,11 @@ interface AppContextValue {
   /** Tables unlocked by the last win, shown once the round's reveal finishes. */
   unlockNotice: TableDef[];
   dismissUnlock: () => void;
+  /** House edge at the table right now, with basic strategy. */
+  edge: number;
+  /** How the odds moved since the player last played a round, if the rules changed. */
+  oddsChange: EdgeChange | null;
+  dismissOddsChange: () => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -136,6 +142,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
   const rulesRef = useRef(effectiveRules);
   rulesRef.current = effectiveRules;
+  // Rules the player last played a round under; a difference means the odds changed.
+  const [oddsSeen, setOddsSeen] = useState<EdgeRules | null>(null);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
@@ -158,6 +166,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     setProgress(prog);
     setGame(g);
+    const rawSettings = loadJSON<unknown>(store, STORAGE_KEYS.settings, (x) => x, null) as { rules?: unknown } | null;
+    const seen = loadJSON<unknown>(store, STORAGE_KEYS.oddsSeen, (x) => x, null);
+    // Before odds tracking existed, the rules last played are the ones saved in settings.
+    setOddsSeen(edgeRulesOf(seen ? sanitizeRules(seen) : rawSettings ? sanitizeRules(rawSettings.rules) : s.rules));
     const lb = Number(store.getItem(STORAGE_KEYS.lastBet));
     if (Number.isFinite(lb) && lb > 0) setLastBet(lb);
     const rv = loadJSON(store, STORAGE_KEYS.review, sanitizeReview, { round: -1, items: [] });
@@ -188,6 +200,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (hydrated) saveJSON(browserStore(), STORAGE_KEYS.progress, progress);
   }, [progress, hydrated]);
+  useEffect(() => {
+    if (hydrated && oddsSeen) saveJSON(browserStore(), STORAGE_KEYS.oddsSeen, oddsSeen);
+  }, [oddsSeen, hydrated]);
 
   // Keep several open copies (tabs, windows) in step: adopt what another copy saved.
   useEffect(() => {
@@ -228,6 +243,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const allCorrect = decisions.length === 0 ? null : decisions.every(Boolean);
       const result = next.result;
       setStats((prev) => recordRound(prev, result, allCorrect));
+      // A full round played at these rules: the change notice has done its job.
+      setOddsSeen(edgeRulesOf(next.rules));
       roundDecisions.current = [];
       setProgress((p) => {
         if (result.bankrollAfter <= p.peakBankroll) return p;
@@ -359,6 +376,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [game.phase],
   );
   const dismissUnlock = useCallback(() => setUnlockNotice([]), []);
+  const edge = houseEdge(game.rules);
+  const oddsChange = useMemo(() => (oddsSeen ? edgeChange(oddsSeen, edgeRulesOf(game.rules)) : null), [oddsSeen, game.rules]);
+  const dismissOddsChange = useCallback(() => setOddsSeen(edgeRulesOf(game.rules)), [game.rules]);
 
   const updateSettings = useCallback((patch: Partial<Settings>) => setSettings((s) => ({ ...s, ...patch })), []);
   const updateRules = useCallback((patch: Partial<Rules>) => {
@@ -409,8 +429,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       bankrollStatus,
       unlockNotice,
       dismissUnlock,
+      edge,
+      oddsChange,
+      dismissOddsChange,
     }),
-    [progress, table, sitAt, bankrollStatus, unlockNotice, dismissUnlock, bankrollHold, hydrated, settings, updateSettings, updateRules, game, pendingRulesDiffer, placeBet, playAction, decideInsurance, resetBankroll, lastBet, review, stats, logDecision, resetStats, sound],
+    [edge, oddsChange, dismissOddsChange, progress, table, sitAt, bankrollStatus, unlockNotice, dismissUnlock, bankrollHold, hydrated, settings, updateSettings, updateRules, game, pendingRulesDiffer, placeBet, playAction, decideInsurance, resetBankroll, lastBet, review, stats, logDecision, resetStats, sound],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

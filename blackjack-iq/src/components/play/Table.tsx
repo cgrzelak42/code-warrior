@@ -72,7 +72,7 @@ function HandView({ hand, active, showOutcome, many }: { hand: PlayerHand; activ
       data-testid="player-hand"
       data-active={active}
     >
-      <CardRow cards={hand.cards} size={many ? "md" : "lg"} startIndex={0} overlap={many ? "-ml-11 sm:-ml-14" : "-ml-12 sm:-ml-16"} />
+      <CardRow cards={hand.cards} size="md" startIndex={0} overlap={many ? "-ml-11 sm:-ml-14" : "-ml-10 sm:-ml-12"} />
       <div className="flex flex-wrap items-center justify-center gap-1.5">
         <TotalBadge cards={hand.cards} />
         <span className="rounded-full bg-black/40 px-2.5 py-1 text-xs font-bold tabular-nums text-gold-bright">
@@ -95,7 +95,7 @@ export function PlayerArea({ game, showOutcome, pendingBet }: { game: GameState;
   const inRound = game.hands.length > 0;
   const betChips: ChipValue[] = chipBreakdown(pendingBet);
   return (
-    <div className="flex min-h-[210px] flex-col items-center justify-end gap-3 sm:min-h-[230px]" data-testid="player-area">
+    <div className="flex min-h-[160px] flex-col items-center justify-end gap-2 sm:min-h-[180px]" data-testid="player-area">
       {inRound ? (
         <div className="flex max-w-full flex-wrap items-end justify-center gap-x-4 gap-y-6 sm:gap-x-8">
           {game.hands.map((h, i) => (

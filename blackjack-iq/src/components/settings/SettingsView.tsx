@@ -3,6 +3,7 @@
 import { Brain, Gauge, RotateCcw, Scale, Volume2 } from "lucide-react";
 import { STARTING_BANKROLL, formatChips } from "@/lib/engine/bankroll";
 import { LOWEST_MIN_BET } from "@/lib/tables";
+import { formatEdge, houseEdge } from "@/lib/strategy/houseEdge";
 import { DECK_OPTIONS, DEFAULT_RULES, type DeckCount, PAYOUT_OPTIONS, type BlackjackPayout, type DoubleRestriction, describeRules } from "@/lib/engine/rules";
 import type { AnimationSpeed } from "@/lib/settings";
 import { useApp } from "../AppProvider";
@@ -138,6 +139,11 @@ export function SettingsView() {
 
         <aside className="flex min-w-0 flex-col gap-5">
           <Panel title="Active rules" icon={<Gauge className="h-4 w-4" />}>
+            <div className="mb-4 rounded-xl border border-gold/30 bg-gold/5 p-3" data-testid="settings-edge">
+              <div className="text-xs font-bold uppercase tracking-wider text-muted">House edge with basic strategy</div>
+              <div className="mt-0.5 font-display text-2xl font-bold tabular-nums text-gold-bright">{formatEdge(houseEdge(r))}</div>
+              <p className="mt-1 text-xs text-dim">For the rules selected here, estimated from the published effect of each rule. Lower is better for you.</p>
+            </div>
             <ul className="space-y-2 text-sm" data-testid="active-rules">
               <li className="flex gap-2 text-cream/90">
                 <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />

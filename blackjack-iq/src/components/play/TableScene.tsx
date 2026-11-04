@@ -45,7 +45,7 @@ function FeltPrint({ payout, h17, insurance }: { payout: string; h17: boolean; i
   const words = payout === "3:2" ? "3 TO 2" : payout === "6:5" ? "6 TO 5" : "1 TO 1";
   return (
     <div className="pointer-events-none select-none text-center" aria-label={`Blackjack pays ${payout}. Dealer ${h17 ? "hits" : "stands on"} soft 17.`}>
-      <svg viewBox="0 0 600 70" className="mx-auto block h-auto w-[min(92%,560px)]" aria-hidden>
+      <svg viewBox="0 0 600 70" className="mx-auto block h-auto w-[min(80%,480px)]" aria-hidden>
         <defs>
           <path id="felt-arc" d="M40,14 Q300,92 560,14" />
         </defs>
@@ -153,12 +153,13 @@ export function TableScene({
 
       {/* The table, in perspective */}
       <div className="table-stage relative z-10" style={feltVars}>
+        <div className="table-shadow" aria-hidden />
         <div className="table-surface felt">
           <ChipTray />
           <CardShoe />
           <div className="table-content">
             {dealer}
-            <div className="my-2 sm:my-3">
+            <div className="my-1 sm:my-2">
               <FeltPrint payout={game.rules.blackjackPayout} h17={game.rules.dealerHitsSoft17} insurance={game.rules.insuranceOffered} />
               {game.shuffledThisRound && game.roundNumber > 0 && (
                 <div className="mt-2 text-center">

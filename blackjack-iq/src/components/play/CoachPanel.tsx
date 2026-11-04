@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { BookOpen, Brain, CheckCircle2, ChevronDown, Eye, Info, Lightbulb, XCircle } from "lucide-react";
+import { ArrowRight, BookOpen, Brain, CheckCircle2, ChevronDown, Eye, Info, Lightbulb, Percent, XCircle } from "lucide-react";
+import { costPerHand, expectedResult, formatEdge } from "@/lib/strategy/houseEdge";
 import { upcardLabel } from "@/lib/engine/cards";
 import type { Action, GameState } from "@/lib/engine/game";
 import { ACTION_LABEL, DISCLAIMER, type ChartRef, type Recommendation } from "@/lib/strategy/coach";
@@ -162,6 +163,49 @@ function ReviewCard({ item, decks, startOpen }: { item: ReviewItem; decks: numbe
   );
 }
 
+/** Opening line of the coach panel: the house edge, or how it changed when the rules did. */
+function OddsSummary() {
+  const { edge, oddsChange, dismissOddsChange, lastBet } = useApp();
+  const bet = lastBet > 0 ? lastBet : 25;
+  if (oddsChange) {
+    const better = oddsChange.to < oddsChange.from;
+    return (
+      <div className={`animate-rise rounded-xl border p-4 ${better ? "border-good/40 bg-good/[0.08]" : "border-warn/40 bg-warn/[0.08]"}`} data-testid="odds-change" role="status">
+        <div className="text-xs font-bold uppercase tracking-wider text-muted">The odds changed</div>
+        <div className="mt-1 flex flex-wrap items-center gap-2 font-display text-xl font-bold tabular-nums text-cream [font-variant-numeric:lining-nums_tabular-nums]">
+          House edge {formatEdge(oddsChange.from)}
+          <ArrowRight className={`h-5 w-5 ${better ? "text-good" : "text-warn"}`} />
+          <span className={better ? "text-good" : "text-warn"}>{formatEdge(oddsChange.to)}</span>
+        </div>
+        <ul className="mt-2 space-y-1 text-sm">
+          {oddsChange.reasons.map((r) => (
+            <li key={r.label} className="flex justify-between gap-3">
+              <span className="text-cream/90">{r.label}</span>
+              <span className={`shrink-0 tabular-nums font-semibold ${r.effect < 0 ? "text-good" : r.effect > 0 ? "text-bad" : "text-muted"}`}>
+                {r.effect === 0 ? "no change" : `${r.effect < 0 ? "−" : "+"}${(Math.abs(r.effect) * 100).toFixed(2)}%`}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-2 text-sm text-muted">
+          {better ? "Better for you" : "Better for the house"}: playing by the book with a {costPerHand(1, bet)} bet, you now {expectedResult(oddsChange.to, bet)} a hand on average, where before you would {expectedResult(oddsChange.from, bet)}.
+        </p>
+        <button type="button" onClick={dismissOddsChange} className="mt-2 text-sm font-semibold text-gold hover:text-gold-bright">
+          Got it
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-start gap-2.5 rounded-xl border border-line bg-ink/40 p-3 text-sm" data-testid="odds-summary">
+      <Percent className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
+      <p className="text-muted">
+        House edge at this table: <strong className="tabular-nums text-cream">{formatEdge(edge)}</strong> with basic strategy. On a {costPerHand(1, bet)} bet you {expectedResult(edge, bet)} a hand on average.
+      </p>
+    </div>
+  );
+}
+
 export function CoachPanel({ game, revealing }: { game: GameState; revealing: boolean }) {
   const { settings, updateSettings, review } = useApp();
   const inRound = game.phase === "player" || game.phase === "insurance";
@@ -194,7 +238,7 @@ export function CoachPanel({ game, revealing }: { game: GameState; revealing: bo
         </div>
       </div>
     );
-  } else if (game.phase === "settled") {
+  } else if (game.phase === "settled" && game.result) {
     const right = items.filter((i) => i.correct).length;
     body =
       items.length === 0 ? (
@@ -233,6 +277,7 @@ export function CoachPanel({ game, revealing }: { game: GameState; revealing: bo
   return (
     <Panel title="Strategy Coach" icon={<Brain className="h-4 w-4" />} className="h-full">
       <div className="space-y-4">
+        <OddsSummary />
         {body}
         <p className="border-t border-line pt-3 text-xs leading-relaxed text-dim">{DISCLAIMER}</p>
       </div>

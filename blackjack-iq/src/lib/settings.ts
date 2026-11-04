@@ -17,7 +17,12 @@ export interface Settings {
   coachReview: boolean;
   trainingTimer: 0 | 5 | 10 | 15;
   trainingDifficulty: Difficulty;
+  /** Version of the saved rule defaults, for one-time migrations. */
+  rulesVersion: number;
 }
+
+/** v2: the table's dealer stands on soft 17 (S17) by default. */
+export const RULES_VERSION = 2;
 
 export const DEFAULT_SETTINGS: Settings = {
   rules: DEFAULT_RULES,
@@ -27,6 +32,7 @@ export const DEFAULT_SETTINGS: Settings = {
   coachReview: true,
   trainingTimer: 10,
   trainingDifficulty: "medium",
+  rulesVersion: RULES_VERSION,
 };
 
 export function sanitizeSettings(raw: unknown): Settings {
@@ -41,5 +47,8 @@ export function sanitizeSettings(raw: unknown): Settings {
   if (o.trainingTimer === 0 || o.trainingTimer === 5 || o.trainingTimer === 10 || o.trainingTimer === 15) s.trainingTimer = o.trainingTimer;
   if (o.trainingDifficulty === "easy" || o.trainingDifficulty === "medium" || o.trainingDifficulty === "hard")
     s.trainingDifficulty = o.trainingDifficulty;
+  // Saved before v2: switch the dealer to stand on soft 17, the new house rule.
+  if (o.rulesVersion !== RULES_VERSION) s.rules = { ...s.rules, dealerHitsSoft17: false };
+  s.rulesVersion = RULES_VERSION;
   return s;
 }

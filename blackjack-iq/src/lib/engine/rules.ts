@@ -27,7 +27,7 @@ export interface Rules {
 
 export const DEFAULT_RULES: Rules = {
   decks: 6,
-  dealerHitsSoft17: true,
+  dealerHitsSoft17: false,
   blackjackPayout: "3:2",
   doubleOn: "any",
   doubleAfterSplit: true,
