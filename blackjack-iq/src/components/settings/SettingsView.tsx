@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { Brain, Gauge, RotateCcw, Scale, Volume2 } from "lucide-react";
 import { STARTING_BANKROLL, formatChips } from "@/lib/engine/bankroll";
+import { LOWEST_MIN_BET } from "@/lib/tables";
 import { DECK_OPTIONS, DEFAULT_RULES, type DeckCount, PAYOUT_OPTIONS, type BlackjackPayout, type DoubleRestriction, describeRules } from "@/lib/engine/rules";
 import type { AnimationSpeed } from "@/lib/settings";
 import { useApp } from "../AppProvider";
@@ -21,10 +21,9 @@ function Row({ label, description, children }: { label: string; description?: st
 }
 
 export function SettingsView() {
-  const { settings, updateSettings, updateRules, game, resetBankroll, pendingRulesDiffer, sound } = useApp();
+  const { settings, updateSettings, updateRules, game, resetBankroll, pendingRulesDiffer, sound, table, progress, bankrollStatus } = useApp();
   const r = settings.rules;
   const midRound = game.phase === "player" || game.phase === "insurance";
-  const [confirmBankroll, setConfirmBankroll] = useState(false);
 
   return (
     <div>
@@ -81,34 +80,10 @@ export function SettingsView() {
             <Toggle checked={r.resplitAces} onChange={(v) => updateRules({ resplitAces: v })} label="Resplit aces" />
             <Toggle checked={r.hitSplitAces} onChange={(v) => updateRules({ hitSplitAces: v })} label="Hit split aces" description="Off by default: split aces normally receive one card each." />
             <Toggle checked={r.insuranceOffered} onChange={(v) => updateRules({ insuranceOffered: v })} label="Offer insurance" description="Offered when the dealer shows an ace. Basic strategy always declines it." />
-            <Row label="Table limits">
-              <div className="flex items-center gap-2 text-sm">
-                <select
-                  aria-label="Minimum bet"
-                  value={r.minBet}
-                  onChange={(e) => updateRules({ minBet: Number(e.target.value) })}
-                  className="rounded-lg border border-line bg-ink px-2 py-1.5 text-cream"
-                >
-                  {[5, 10, 25, 100].map((v) => (
-                    <option key={v} value={v}>
-                      {formatChips(v)}
-                    </option>
-                  ))}
-                </select>
-                <span className="text-muted">to</span>
-                <select
-                  aria-label="Maximum bet"
-                  value={r.maxBet}
-                  onChange={(e) => updateRules({ maxBet: Number(e.target.value) })}
-                  className="rounded-lg border border-line bg-ink px-2 py-1.5 text-cream"
-                >
-                  {[500, 1000, 2500, 5000].map((v) => (
-                    <option key={v} value={v}>
-                      {formatChips(v)}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <Row label="Table limits" description="Each table sets its own stakes. Change tables from the Play screen.">
+              <span className="text-sm font-semibold tabular-nums text-cream" data-testid="settings-limits">
+                {table.name}: {formatChips(table.minBet)}–{formatChips(table.maxBet)}
+              </span>
             </Row>
             <div className="mt-3 flex justify-end">
               <button
@@ -164,6 +139,10 @@ export function SettingsView() {
         <aside className="flex min-w-0 flex-col gap-5">
           <Panel title="Active rules" icon={<Gauge className="h-4 w-4" />}>
             <ul className="space-y-2 text-sm" data-testid="active-rules">
+              <li className="flex gap-2 text-cream/90">
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
+                {table.name}: bets {formatChips(table.minBet)}–{formatChips(table.maxBet)}
+              </li>
               {describeRules(game.rules).map((line) => (
                 <li key={line} className="flex gap-2 text-cream/90">
                   <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
@@ -179,23 +158,22 @@ export function SettingsView() {
           </Panel>
           <Panel title="Virtual bankroll">
             <p className="text-sm text-muted">
-              Current bankroll <strong className="text-cream">{formatChips(game.bankroll)}</strong>. Chips are play money only: there are no deposits, withdrawals or payments.
+              Current bankroll <strong className="text-cream">{formatChips(game.bankroll)}</strong>, best ever{" "}
+              <strong className="text-gold-bright">{formatChips(progress.peakBankroll)}</strong>. Chips are play money only: there are no deposits, withdrawals or payments.
             </p>
-            <button
-              type="button"
-              disabled={midRound}
-              onClick={() => {
-                if (confirmBankroll) {
-                  resetBankroll();
-                  setConfirmBankroll(false);
-                } else setConfirmBankroll(true);
-              }}
-              onBlur={() => setConfirmBankroll(false)}
-              className="mt-3 flex items-center gap-2 rounded-xl border border-line bg-panel-2 px-4 py-2 text-sm font-semibold text-cream disabled:opacity-40"
-            >
-              <RotateCcw className="h-4 w-4" />
-              {confirmBankroll ? "Click again to confirm" : `Reset bankroll to ${formatChips(STARTING_BANKROLL)}`}
-            </button>
+            <p className="mt-2 text-sm text-muted">
+              Your bankroll carries over from hand to hand and between visits. If it runs out (below the {formatChips(LOWEST_MIN_BET)} minimum at every table), you can start again with {formatChips(STARTING_BANKROLL)}; unlocked tables and statistics stay.
+            </p>
+            {bankrollStatus === "out-of-chips" && !midRound && (
+              <button
+                type="button"
+                onClick={resetBankroll}
+                className="btn-gold mt-3 flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold"
+              >
+                <RotateCcw className="h-4 w-4" /> Reset bankroll to {formatChips(STARTING_BANKROLL)}
+              </button>
+            )}
+            {progress.resets > 0 && <p className="mt-2 text-xs text-dim">Bankroll resets so far: {progress.resets}</p>}
           </Panel>
           <Panel title="About the coach">
             <p className="text-sm leading-relaxed text-muted">

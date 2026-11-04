@@ -48,7 +48,7 @@ export function DealerArea({ game, revealCount }: { game: GameState; revealCount
   const shown = game.dealer.slice(0, Math.max(2, Math.min(game.dealer.length, revealCount)));
   const faceUp = shown.slice(0, revealCount);
   return (
-    <div className="flex min-h-[150px] flex-col items-center gap-3 sm:min-h-[180px]" data-testid="dealer-area">
+    <div className="flex min-h-[140px] flex-col items-center gap-2 sm:min-h-[160px]" data-testid="dealer-area">
       <div className="flex h-7 items-center gap-2">
         <span className="text-xs font-bold uppercase tracking-[0.25em] text-cream/60">Dealer</span>
         {shown.length > 0 && <TotalBadge cards={faceUp} hidden={revealCount < 2} />}
@@ -95,7 +95,7 @@ export function PlayerArea({ game, showOutcome, pendingBet }: { game: GameState;
   const inRound = game.hands.length > 0;
   const betChips: ChipValue[] = chipBreakdown(pendingBet);
   return (
-    <div className="flex min-h-[230px] flex-col items-center justify-end gap-3 sm:min-h-[260px]" data-testid="player-area">
+    <div className="flex min-h-[210px] flex-col items-center justify-end gap-3 sm:min-h-[230px]" data-testid="player-area">
       {inRound ? (
         <div className="flex max-w-full flex-wrap items-end justify-center gap-x-4 gap-y-6 sm:gap-x-8">
           {game.hands.map((h, i) => (

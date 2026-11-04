@@ -5,13 +5,15 @@ A premium blackjack table and basic-strategy coach. You play with virtual chips 
 ## Features
 
 - **Play**: full blackjack with hit, stand, double down, split (with resplits), insurance and even money, natural blackjack, dealer peek, and an H17 or S17 dealer. Blackjack pays 3:2, 6:5 or 1:1, and a multi-deck shoe reshuffles at the cut card. You get a virtual bankroll with chips, and the table has animated dealing, a hole-card flip, sound effects and keyboard shortcuts (H/S/D/P, Y/N, Enter).
+- **Tables**: you sit at a 3D table tilted in perspective in front of a drawn landscape, with a gentle parallax as you move the pointer. Four tables unlock as your bankroll grows: Lakeside Lodge ($5–$500, open from the start), Alpine Chalet ($10–$1,000, unlocks at $2,000), Sunset Beach Club ($25–$2,500, at $4,000) and Aurora Fjord ($100–$5,000, at $8,000). Unlocks are based on the highest bankroll you've reached, so they stay unlocked even if your chips drop.
+- **Bankroll**: it carries over from hand to hand and between visits. If it drops below a table's minimum, you're offered a cheaper table. Only when it falls below the lowest minimum at any table ($5) can you reset it to $1,000; unlocked tables and statistics are kept.
 - **Strategy coach**: the coach stays quiet while you play, so it never tells you what to do mid-hand. Once the round is over (after the dealer's cards are revealed), it reviews every decision you made, including insurance: whether it matched basic strategy, what basic strategy says and why, how strong that recommendation is, the dealer's bust odds, and the value of each possible play. All of these numbers are calculated from the cards actually left in the shoe at the moment you decided.
 - **Train**: random decisions with no chips at stake. Three difficulty levels and an optional 5/10/15-second timer. Score, accuracy and streaks are tracked, and missed hands are saved for review so you can drill them again.
 - **Strategy chart**: an interactive chart of hard totals, soft totals and pairs for the active rules. Click any cell to see the reasoning and the estimated value of every possible play.
 - **Statistics**: game results (hands, W/L/P, blackjacks, net chips, bankroll over time) are tracked separately from strategy performance (accuracy, streaks, accuracy by hand type and over time, most common mistakes). It also counts how often correct play still lost.
-- **Settings**: table rules (decks, soft 17, payout, doubling, DAS, split limits, resplit/hit split aces, insurance, table limits), how the coach appears, sound and volume, and animation speed.
+- **Settings**: table rules (decks, soft 17, payout, doubling, DAS, split limits, resplit/hit split aces, insurance), the hand review, sound and volume, and animation speed. Bet limits come from the table you sit at.
 
-Everything is saved in `localStorage`: settings, statistics, the missed-hand review list and the table itself, including a round in progress. All of it survives a refresh.
+Everything is saved in `localStorage`: settings, statistics, table progress, the missed-hand review list and the table itself, including a round in progress. All of it survives a refresh. If the app is open in more than one tab, they stay in step, and an older tab never overwrites newer rounds.
 
 ## Running it
 
@@ -44,6 +46,9 @@ The game logic is plain TypeScript with no React, so it can be tested on its own
 | `src/lib/strategy/coach.ts` | Recommendation for legal actions, strength rating, explanations, insurance advice |
 | `src/lib/training/training.ts` | Scenario generation by difficulty, grading, scoring, missed-hand review |
 | `src/lib/stats/stats.ts` | Statistics model, recording, trends, mistakes |
+| `src/lib/tables.ts` | Tables, unlock thresholds, bankroll states (ok / below table minimum / out of chips) |
+| `src/components/play/Scenery.tsx` | Procedural SVG landscapes (lake, alpine, beach, aurora), generated from seeded noise |
+| `src/components/play/TableScene.tsx` | The seated 3D table view |
 | `src/lib/storage/*` | Versioned `localStorage` persistence with validation and a memory fallback |
 | `src/components/*` | UI (Next.js App Router, React, Tailwind CSS, Lucide, Recharts) |
 

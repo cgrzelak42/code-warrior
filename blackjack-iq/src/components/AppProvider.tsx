@@ -16,6 +16,18 @@ import { type DecisionInput, type Stats, emptyStats, recordDecision, recordRound
 import { restoreGame } from "@/lib/storage/gameState";
 import { STORAGE_KEYS, browserStore, loadJSON, saveJSON } from "@/lib/storage/persist";
 import { DEFAULT_SETTINGS, type Settings, sanitizeSettings } from "@/lib/settings";
+import {
+  type BankrollState,
+  type Progress,
+  type SceneId,
+  type TableDef,
+  bankrollState,
+  defaultProgress,
+  isUnlocked,
+  newlyUnlocked,
+  sanitizeProgress,
+  tableById,
+} from "@/lib/tables";
 import { type SoundName, playSound } from "@/lib/sound";
 
 export interface ReviewItem {
@@ -61,6 +73,14 @@ interface AppContextValue {
   /** Bankroll to display: held at the pre-settlement amount while the dealer reveal animates. */
   displayBankroll: number;
   setBankrollHold: (amount: number | null) => void;
+  progress: Progress;
+  table: TableDef;
+  /** Move to another unlocked table (between rounds only). */
+  sitAt: (id: SceneId) => void;
+  bankrollStatus: BankrollState;
+  /** Tables unlocked by the last win, shown once the round's reveal finishes. */
+  unlockNotice: TableDef[];
+  dismissUnlock: () => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -106,6 +126,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [bankrollHold, setBankrollHold] = useState<number | null>(null);
   const roundDecisions = useRef<boolean[]>([]);
   const reviewId = useRef(0);
+  const [progress, setProgress] = useState<Progress>(defaultProgress);
+  const [unlockNotice, setUnlockNotice] = useState<TableDef[]>([]);
+  const table = tableById(progress.tableId);
+  // The table sets the betting limits; everything else comes from the rule settings.
+  const effectiveRules = useMemo<Rules>(
+    () => ({ ...settings.rules, minBet: table.minBet, maxBet: table.maxBet }),
+    [settings.rules, table],
+  );
+  const rulesRef = useRef(effectiveRules);
+  rulesRef.current = effectiveRules;
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
@@ -114,9 +144,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const store = browserStore();
     const s = loadJSON(store, STORAGE_KEYS.settings, sanitizeSettings, DEFAULT_SETTINGS);
     setSettings(s);
-    setStats(loadJSON(store, STORAGE_KEYS.stats, sanitizeStats, emptyStats()));
+    const st = loadJSON(store, STORAGE_KEYS.stats, sanitizeStats, emptyStats());
+    setStats(st);
     const rawGame = loadJSON<unknown>(store, STORAGE_KEYS.game, (x) => x, null);
-    const g = restoreGame(rawGame, s.rules);
+    const rawProgress = loadJSON<unknown>(store, STORAGE_KEYS.progress, (x) => x, null);
+    let prog = sanitizeProgress(rawProgress);
+    const t = tableById(prog.tableId);
+    const g = restoreGame(rawGame, { ...s.rules, minBet: t.minBet, maxBet: t.maxBet });
+    if (rawProgress == null) {
+      // First visit since tables were added: credit the best bankroll already reached.
+      const best = Math.max(prog.peakBankroll, g.bankroll, ...st.roundHistory.map((p) => p.bankroll));
+      prog = { ...prog, peakBankroll: best };
+    }
+    setProgress(prog);
     setGame(g);
     const lb = Number(store.getItem(STORAGE_KEYS.lastBet));
     if (Number.isFinite(lb) && lb > 0) setLastBet(lb);
@@ -135,8 +175,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (hydrated) saveJSON(browserStore(), STORAGE_KEYS.stats, stats);
   }, [stats, hydrated]);
   useEffect(() => {
-    if (hydrated) saveJSON(browserStore(), STORAGE_KEYS.game, game);
+    if (!hydrated) return;
+    const store = browserStore();
+    // Another open copy of the page may have played on; never overwrite newer rounds with an older table.
+    const stored = loadJSON<unknown>(store, STORAGE_KEYS.game, (x) => x, null) as { roundNumber?: unknown } | null;
+    if (stored && typeof stored.roundNumber === "number" && stored.roundNumber > game.roundNumber) {
+      setGame(restoreGame(stored, rulesRef.current));
+      return;
+    }
+    saveJSON(store, STORAGE_KEYS.game, game);
   }, [game, hydrated]);
+  useEffect(() => {
+    if (hydrated) saveJSON(browserStore(), STORAGE_KEYS.progress, progress);
+  }, [progress, hydrated]);
+
+  // Keep several open copies (tabs, windows) in step: adopt what another copy saved.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (!e.key || e.newValue == null) return;
+      try {
+        const v: unknown = JSON.parse(e.newValue);
+        if (e.key === STORAGE_KEYS.game) {
+          const r = (v as { roundNumber?: unknown }).roundNumber;
+          setGame((g) => (typeof r === "number" && r >= g.roundNumber ? restoreGame(v, rulesRef.current) : g));
+        } else if (e.key === STORAGE_KEYS.stats) setStats(sanitizeStats(v));
+        else if (e.key === STORAGE_KEYS.progress) setProgress(sanitizeProgress(v));
+        else if (e.key === STORAGE_KEYS.settings) setSettings(sanitizeSettings(v));
+      } catch {
+        /* ignore malformed writes */
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
   useEffect(() => {
     if (hydrated) saveJSON(browserStore(), STORAGE_KEYS.review, review);
   }, [review, hydrated]);
@@ -158,6 +229,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const result = next.result;
       setStats((prev) => recordRound(prev, result, allCorrect));
       roundDecisions.current = [];
+      setProgress((p) => {
+        if (result.bankrollAfter <= p.peakBankroll) return p;
+        const unlocked = newlyUnlocked(p.peakBankroll, result.bankrollAfter);
+        if (unlocked.length) setUnlockNotice(unlocked);
+        return { ...p, peakBankroll: result.bankrollAfter };
+      });
     }
   }, []);
 
@@ -165,7 +242,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     (amount: number): string | null => {
       try {
         let g = game;
-        const rules = settingsRef.current.rules;
+        const rules = rulesRef.current;
         if (g.rules !== rules && JSON.stringify(g.rules) !== JSON.stringify(rules)) g = changeRules(g, rules);
         roundDecisions.current = [];
         const next = deal(g, amount);
@@ -263,13 +340,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [game, settleIfDone, sound],
   );
 
+  const bankrollStatus = bankrollState(game.bankroll, table);
+
+  // The bankroll carries over between hands and sessions. It can only be reset once it has
+  // run out (below every table's minimum bet), and never in the middle of a round.
   const resetBankroll = useCallback(() => {
-    try {
-      setGame((g) => setBankroll(g, STARTING_BANKROLL));
-    } catch {
-      /* mid-round: ignored, button is disabled then */
-    }
-  }, []);
+    if (game.phase === "player" || game.phase === "insurance") return;
+    if (bankrollState(game.bankroll, table) !== "out-of-chips") return;
+    setGame(setBankroll(game, STARTING_BANKROLL));
+    setProgress((p) => ({ ...p, resets: p.resets + 1 }));
+  }, [game, table]);
+
+  const sitAt = useCallback(
+    (id: SceneId) => {
+      if (game.phase === "player" || game.phase === "insurance") return;
+      setProgress((p) => (isUnlocked(tableById(id), p.peakBankroll) ? { ...p, tableId: id } : p));
+    },
+    [game.phase],
+  );
+  const dismissUnlock = useCallback(() => setUnlockNotice([]), []);
 
   const updateSettings = useCallback((patch: Partial<Settings>) => setSettings((s) => ({ ...s, ...patch })), []);
   const updateRules = useCallback((patch: Partial<Rules>) => {
@@ -285,14 +374,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!hydrated) return;
     setGame((g) => {
       if (g.phase === "player" || g.phase === "insurance") return g;
-      if (JSON.stringify(g.rules) === JSON.stringify(settings.rules)) return g;
-      return changeRules(g, settings.rules);
+      if (JSON.stringify(g.rules) === JSON.stringify(effectiveRules)) return g;
+      return changeRules(g, effectiveRules);
     });
-  }, [settings.rules, hydrated]);
+  }, [effectiveRules, hydrated]);
 
   const resetStats = useCallback(() => setStats(emptyStats()), []);
 
-  const pendingRulesDiffer = JSON.stringify(game.rules) !== JSON.stringify(settings.rules);
+  const pendingRulesDiffer = JSON.stringify(game.rules) !== JSON.stringify(effectiveRules);
 
   const value = useMemo<AppContextValue>(
     () => ({
@@ -314,8 +403,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       sound,
       displayBankroll: bankrollHold ?? game.bankroll,
       setBankrollHold,
+      progress,
+      table,
+      sitAt,
+      bankrollStatus,
+      unlockNotice,
+      dismissUnlock,
     }),
-    [bankrollHold, hydrated, settings, updateSettings, updateRules, game, pendingRulesDiffer, placeBet, playAction, decideInsurance, resetBankroll, lastBet, review, stats, logDecision, resetStats, sound],
+    [progress, table, sitAt, bankrollStatus, unlockNotice, dismissUnlock, bankrollHold, hydrated, settings, updateSettings, updateRules, game, pendingRulesDiffer, placeBet, playAction, decideInsurance, resetBankroll, lastBet, review, stats, logDecision, resetStats, sound],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -40,6 +40,7 @@ export const STORAGE_KEYS = {
   missed: "bjiq:missed:v1",
   lastBet: "bjiq:lastBet",
   review: "bjiq:review:v1",
+  progress: "bjiq:progress:v1",
 } as const;
 
 export function loadJSON<T>(store: KeyValueStore, key: string, sanitize: (raw: unknown) => T, fallbackValue: T): T {

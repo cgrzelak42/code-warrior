@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Hand, RotateCcw, Shuffle, Split, Square, TrendingUp, Undo2 } from "lucide-react";
+import { ArrowDownRight, Hand, RotateCcw, Sparkles, Split, Square, TrendingUp, Undo2 } from "lucide-react";
 import { CHIP_VALUES, type ChipValue, canAfford, formatChips, money } from "@/lib/engine/bankroll";
 import { type Action, illegalReason, insuranceCost, legalActions } from "@/lib/engine/game";
-import { feltSummary } from "@/lib/engine/rules";
+import { bestAffordableTable } from "@/lib/tables";
 import { Chip } from "../Chip";
 import { useApp } from "../AppProvider";
 import { CoachPanel } from "./CoachPanel";
 import { DealerArea, PlayerArea } from "./Table";
+import { TableLobby } from "./TableLobby";
+import { TableScene } from "./TableScene";
 
 const ACTION_META: Record<Action, { label: string; key: string; icon: typeof Hand; color: string }> = {
   hit: { label: "Hit", key: "H", icon: Hand, color: "var(--color-act-hit)" },
@@ -22,8 +24,9 @@ const REVEAL_DELAY = { normal: 650, fast: 300, off: 0 } as const;
 
 export function PlayTable() {
   const app = useApp();
-  const { game, settings, hydrated, lastBet, sound } = app;
+  const { game, settings, hydrated, lastBet, sound, table, progress, bankrollStatus } = app;
   const [pendingBet, setPendingBet] = useState(0);
+  const [lobbyOpen, setLobbyOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const betInitialised = useRef(false);
 
@@ -33,6 +36,16 @@ export function PlayTable() {
       setPendingBet(Math.min(lastBet, game.bankroll >= game.rules.minBet ? game.bankroll : 0));
     }
   }, [hydrated, lastBet, game.bankroll, game.rules.minBet]);
+
+  // Keep the bet inside the limits of the table you're sitting at.
+  useEffect(() => {
+    if (!betInitialised.current) return;
+    setPendingBet((b) => {
+      if (b === 0) return 0;
+      const clamped = Math.min(Math.max(b, table.minBet), table.maxBet);
+      return game.bankroll >= clamped ? clamped : 0;
+    });
+  }, [table.minBet, table.maxBet, game.bankroll]);
 
   // Dealer reveal: number of dealer cards face up (1 = hole card still down). On first render
   // (page load or navigating back) a finished round is shown as-is with no replay or sound.
@@ -90,7 +103,9 @@ export function PlayTable() {
 
   const legal = useMemo(() => legalActions(game), [game]);
   const canBet = game.phase === "betting" || game.phase === "settled";
-  const broke = canBet && game.bankroll < game.rules.minBet;
+  const broke = canBet && bankrollStatus === "out-of-chips";
+  const belowMin = canBet && bankrollStatus === "below-table-min";
+  const fallbackTable = bestAffordableTable(game.bankroll, progress.peakBankroll);
 
   const addChip = (v: ChipValue) => {
     setError(null);
@@ -141,28 +156,42 @@ export function PlayTable() {
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
       <div className="flex min-w-0 flex-col gap-4">
         {/* Table */}
-        <div className="felt felt-rail overflow-hidden rounded-[28px] px-3 pb-6 pt-5 sm:rounded-[40px] sm:px-8 sm:pt-6" data-testid="table">
-          <div className="mb-1 flex items-start justify-between text-[11px] font-semibold uppercase tracking-[0.18em] text-cream/55">
-            <span>
-              {game.rules.decks}-deck shoe
-              <span className="ml-2 inline-block h-1.5 w-16 overflow-hidden rounded-full bg-black/30 align-middle" title={`${Math.round(shoeLeft * 100)}% of the shoe remaining`}>
-                <span className="block h-full bg-gold/70" style={{ width: `${shoeLeft * 100}%` }} />
-              </span>
-            </span>
-            <span>Round {game.roundNumber}</span>
-          </div>
-          <DealerArea game={game} revealCount={revealCount} />
-          <div className="my-3 text-center sm:my-4">
-            <div className="font-display text-[13px] font-bold uppercase tracking-[0.18em] text-gold/80 [font-variant-numeric:lining-nums] sm:text-xl sm:tracking-[0.22em]">{feltSummary(game.rules)}</div>
-            {game.rules.insuranceOffered && <div className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.3em] text-cream/40 sm:text-xs">Insurance pays 2 to 1</div>}
-            {game.shuffledThisRound && game.roundNumber > 0 && (
-              <div className="animate-rise mt-2 inline-flex items-center gap-1.5 rounded-full bg-black/30 px-3 py-1 text-xs font-semibold text-cream/80">
-                <Shuffle className="h-3.5 w-3.5" /> Fresh shoe shuffled
+        <TableScene
+          table={table}
+          game={game}
+          onOpenLobby={() => setLobbyOpen(true)}
+          lobbyDisabled={!canBet || revealing}
+          dealer={<DealerArea game={game} revealCount={revealCount} />}
+          player={<PlayerArea game={game} showOutcome={game.phase === "settled" && !revealing} pendingBet={canBet && game.hands.length === 0 ? pendingBet : 0} />}
+        />
+        <TableLobby open={lobbyOpen} onClose={() => setLobbyOpen(false)} />
+
+        {app.unlockNotice.length > 0 && !revealing && (
+          <div className="animate-rise flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gold/50 bg-gold/10 px-5 py-3.5" role="status" data-testid="unlock-notice">
+            <div className="flex items-center gap-3">
+              <Sparkles className="h-6 w-6 shrink-0 text-gold-bright" />
+              <div>
+                <div className="font-display text-lg font-bold text-cream">New table unlocked: {app.unlockNotice[app.unlockNotice.length - 1]!.name}</div>
+                <div className="text-sm text-muted">Your bankroll reached {formatChips(progress.peakBankroll)}. It stays unlocked even if your chips drop later.</div>
               </div>
-            )}
+            </div>
+            <div className="flex gap-2">
+              <button type="button" onClick={app.dismissUnlock} className="rounded-xl border border-line bg-panel-2 px-4 py-2 text-sm font-semibold text-muted hover:text-cream">
+                Later
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  app.dismissUnlock();
+                  setLobbyOpen(true);
+                }}
+                className="btn-gold rounded-xl px-4 py-2 text-sm font-bold"
+              >
+                See tables
+              </button>
+            </div>
           </div>
-          <PlayerArea game={game} showOutcome={game.phase === "settled" && !revealing} pendingBet={canBet && game.hands.length === 0 ? pendingBet : 0} />
-        </div>
+        )}
 
         {/* Round result */}
         {game.phase === "settled" && result && !revealing && (
@@ -248,14 +277,28 @@ export function PlayTable() {
                 );
               })}
             </div>
-          ) : broke ? (
-            <div className="flex flex-wrap items-center justify-between gap-3">
+          ) : broke && !revealing ? (
+            <div className="flex flex-wrap items-center justify-between gap-3" data-testid="out-of-chips">
               <div>
                 <div className="font-bold text-cream">Out of chips</div>
-                <div className="text-sm text-muted">These are virtual chips. Reset your bankroll to keep practicing.</div>
+                <div className="text-sm text-muted">
+                  You have {formatChips(game.bankroll)}, less than the smallest bet at any table. These are virtual chips, so you can start again with $1,000. Your unlocked tables and statistics stay.
+                </div>
               </div>
-              <button type="button" onClick={app.resetBankroll} className="btn-gold flex items-center gap-2 rounded-xl px-5 py-3 font-bold">
+              <button type="button" onClick={app.resetBankroll} className="btn-gold flex items-center gap-2 rounded-xl px-5 py-3 font-bold" data-testid="reset-bankroll">
                 <RotateCcw className="h-4 w-4" /> Reset to $1,000
+              </button>
+            </div>
+          ) : belowMin && !revealing ? (
+            <div className="flex flex-wrap items-center justify-between gap-3" data-testid="below-min">
+              <div>
+                <div className="font-bold text-cream">Below this table&apos;s minimum</div>
+                <div className="text-sm text-muted">
+                  {table.name} needs at least {formatChips(table.minBet)} a hand and you have {formatChips(game.bankroll)}. Move to a lower-stakes table to keep playing.
+                </div>
+              </div>
+              <button type="button" onClick={() => app.sitAt(fallbackTable.id)} className="btn-gold flex items-center gap-2 rounded-xl px-5 py-3 font-bold">
+                <ArrowDownRight className="h-4 w-4" /> Move to {fallbackTable.name}
               </button>
             </div>
           ) : (
