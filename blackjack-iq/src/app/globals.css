@@ -159,7 +159,7 @@ body {
 .scene-backdrop {
   /* 150% of the frame tall, shifted so the scene's focus line (its horizon, set per scene as
      a percentage of the scene's height) sits just above the table's far rail. */
-  --focus-at: 26%;
+  --focus-at: 32%;
   position: absolute;
   left: -24px;
   right: -24px;
@@ -170,17 +170,17 @@ body {
 }
 .table-stage {
   position: absolute;
-  inset: 30% 0 0 0;
-  perspective: 1100px;
-  perspective-origin: 50% -40%;
+  inset: 44% 0 0 0;
+  perspective: 900px;
+  perspective-origin: 50% -60%;
 }
 .table-surface {
   position: absolute;
   left: 50%;
-  bottom: -60px;
-  width: min(1000px, 96%);
-  height: calc(100% + 150px);
-  transform: translateX(-50%) rotateX(30deg);
+  bottom: -40px;
+  width: min(860px, 84%);
+  height: calc(100% + 230px);
+  transform: translateX(-50%) rotateX(44deg);
   transform-origin: 50% 100%;
   border-radius: 34px 34px 50% 50% / 34px 34px 16% 16%;
   border: 16px solid #2b1a10;
@@ -204,7 +204,7 @@ body {
 }
 .table-content {
   position: relative;
-  padding: 10px 6% 96px;
+  padding: 6px 6% 64px;
   display: flex;
   flex-direction: column;
 }
@@ -213,20 +213,20 @@ body {
     height: clamp(560px, 78vh, 680px);
   }
   .scene-backdrop {
-    --focus-at: 19%;
+    --focus-at: 26%;
   }
   .table-stage {
-    inset: 24% 0 0 0;
+    inset: 34% 0 0 0;
   }
   .table-surface {
-    width: 108%;
-    height: calc(100% + 110px);
-    transform: translateX(-50%) rotateX(20deg);
+    width: 104%;
+    height: calc(100% + 150px);
+    transform: translateX(-50%) rotateX(32deg);
     border-width: 10px;
     border-bottom-width: 0;
   }
   .table-content {
-    padding: 6px 6% 84px;
+    padding: 4px 6% 56px;
   }
 }
 
